@@ -21,9 +21,9 @@ public class SWRCModMenu implements ModMenuApi {
             ConfigCategory Category = builder.getOrCreateCategory(Text.of("Settings"));
             ConfigEntryBuilder packet = builder.entryBuilder();
 
-            Category.addEntry(packet.startBooleanToggle(Text.of("Verbose Mode"), config.verbose)
-                    .setDefaultValue(true)
-                    .setSaveConsumer(newValue -> config.verbose = newValue)
+            Category.addEntry(packet.startStrField(Text.of("RC Key"), config.rc_key)
+                    .setDefaultValue("")
+                    .setSaveConsumer(newValue -> config.rc_key = newValue)
                     .build());
 
 

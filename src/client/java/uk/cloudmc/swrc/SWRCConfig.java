@@ -15,7 +15,8 @@ public class SWRCConfig implements ConfigData {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private static SWRCConfig instance;
-    public boolean verbose = true;
+
+    public String rc_key = "";
 
     public static SWRCConfig getInstance() {
         if (instance == null) {
