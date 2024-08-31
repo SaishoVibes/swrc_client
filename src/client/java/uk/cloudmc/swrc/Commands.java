@@ -287,7 +287,7 @@ public class Commands {
             Race activeRace = SWRC.getRace();
 
             if (activeRace != null) {
-                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Active race (%s)", activeRace.getRaceState())));
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Active race (stage=%s,#checkpoints=%s)", activeRace.getRaceState(), activeRace.numCheckpoints())));
             } else {
                 context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("No active race present"));
             }

@@ -1,5 +1,6 @@
 package uk.cloudmc.swrc.net;
 
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.net.packets.*;
@@ -31,6 +32,9 @@ public class RacerWebsocketConnection extends AbstractWebsocketConnection {
                 break;
             case(S2CUpdatePacket.packetId):
                 onPacket(new S2CUpdatePacket().fromBytes(payload));
+                break;
+            case(S2CMessagePacket.packetId):
+                onPacket(new S2CMessagePacket().fromBytes(payload));
                 break;
             default:
                 SWRC.LOGGER.info(String.format("Got unknown packet id %s", packetId));
@@ -67,7 +71,18 @@ public class RacerWebsocketConnection extends AbstractWebsocketConnection {
         }
         if (uPacket instanceof S2CUpdatePacket) {
             S2CUpdatePacket packet = (S2CUpdatePacket) uPacket;
-            SWRC.LOGGER.info(packet.racers.toString());
+
+            Race current_race = SWRC.getRace();
+            if (current_race != null) {
+                current_race.setRacers(packet.racers);
+                current_race.setLeaderboard(packet.race_leaderboard);
+                current_race.setLapBeginTimes(packet.race_lap_begin);
+            }
+        }
+        if (uPacket instanceof S2CMessagePacket) {
+            S2CMessagePacket packet = (S2CMessagePacket) uPacket;
+
+            SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE(String.format("[Racer] %s", packet.message)));
         }
     }
 }

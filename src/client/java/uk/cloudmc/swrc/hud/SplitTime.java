@@ -1,0 +1,109 @@
+package uk.cloudmc.swrc.hud;
+
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.util.Identifier;
+import uk.cloudmc.swrc.Race;
+import uk.cloudmc.swrc.SWRC;
+import uk.cloudmc.swrc.SWRCConfig;
+import uk.cloudmc.swrc.net.packets.S2CUpdatePacket;
+
+import java.text.DecimalFormat;
+
+public class SplitTime implements Hud {
+
+    private static final Identifier WIDGETS_TEXTURE = new Identifier(SWRC.NAMESPACE, "textures/widgets.png");
+
+    private int scaledWidth;
+    private int scaledHeight;
+
+    private static DecimalFormat decimalFormat = new DecimalFormat("00.000");
+
+    public SplitTime() {}
+
+    @Override
+    public boolean shouldRender() {
+        return SWRC.getRace() != null;
+    }
+
+    @Override
+    public void render(DrawContext graphics, float tickDelta) {
+        Race race = SWRC.getRace();
+
+
+        if (race.raceLeaderboardPositions.size() == 0) return;
+
+        this.scaledWidth = SWRC.instance.getWindow().getScaledWidth();
+        this.scaledHeight = SWRC.instance.getWindow().getScaledHeight();
+
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
+
+
+        int x = this.scaledWidth / 2;
+        int y = (int) (this.scaledHeight * 0.6);
+
+        int selfPlace = race.getSelfBoardPosition();
+        long current_lap = System.currentTimeMillis() - race.getLapBeginTime(SWRC.instance.player.getName().getString());
+        long delta_to_infront = 0;
+
+        if (selfPlace > 0) {
+            long self_delta = race.raceLeaderboardPositions.get(selfPlace).time_delta;
+            long infront_delta = race.raceLeaderboardPositions.get(selfPlace - 1).time_delta;
+
+            delta_to_infront = self_delta - infront_delta;
+        }
+
+        String time_text = msToTimeString(current_lap);
+        String split_text = (delta_to_infront >= 0 ? "+" : "") + msToTimeString(delta_to_infront);
+
+        int combined_length = widthOfText(time_text) + widthOfText(split_text) + 4;
+
+        int tx = 30;
+        int ty = delta_to_infront >= 0 ? 0 : 10;
+
+        x -= combined_length / 2;
+
+        for (int ax = 0; ax < widthOfText(time_text) + 2; ax++) {
+            graphics.drawTexture(WIDGETS_TEXTURE, x + ax, y, tx, ty, 1, 10);
+            for (int ay = 0; ay < 10; ay++) {
+                graphics.drawTexture(WIDGETS_TEXTURE, x + ax, y + ay, tx, ty, 1, 1);
+            }
+        }
+
+
+        for (int bx = 0; bx < widthOfText(split_text) + 2; bx++) {
+            graphics.drawTexture(WIDGETS_TEXTURE, x + bx + widthOfText(time_text) + 2, y, tx + 1, ty, 1, 10);
+        }
+
+        renderText(graphics, time_text, x + 1, y + 1, 0xFFFFFF);
+        renderText(graphics, split_text, x + widthOfText(time_text) + 3, y + 1, 0xFFFFFF);
+        renderText(graphics, split_text, x + widthOfText(time_text) + 3, y + 1, 0xFFFFFF);
+
+        RenderSystem.disableBlend();
+    }
+
+    public String msToTimeString(long ms) {
+        double secconds = (double) ms / 1000;
+
+        String prefix = "";
+
+        if (secconds > 60) {
+            int mins = (int) secconds / 60;
+
+            prefix = String.format("%s:", mins);
+        }
+
+        return prefix + decimalFormat.format(secconds % 60);
+    }
+
+    public static void renderText(DrawContext graphics, String text, int x, int y, int color) {
+        graphics.drawTextWithShadow(SWRC.instance.textRenderer, text, x, y, color);
+    }
+
+    public static int widthOfText(String text) {
+        return SWRC.instance.textRenderer.getWidth(text);
+    }
+}

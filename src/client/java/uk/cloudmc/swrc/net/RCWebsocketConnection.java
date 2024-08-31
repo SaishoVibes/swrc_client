@@ -27,6 +27,9 @@ public class RCWebsocketConnection extends AbstractWebsocketConnection {
             case(S2CHandshakePacket.packetId):
                 onPacket(new S2CHandshakePacket().fromBytes(payload));
                 break;
+            case(S2CMessagePacket.packetId):
+                onPacket(new S2CMessagePacket().fromBytes(payload));
+                break;
             default:
                 SWRC.LOGGER.warn(String.format("Got unknown packet id %s", packetId));
         }
@@ -52,6 +55,11 @@ public class RCWebsocketConnection extends AbstractWebsocketConnection {
         }
         if (uPacket instanceof S2CHandshakePacket) {
             SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[RC] Authenticated as Race Control."));
+        }
+        if (uPacket instanceof S2CMessagePacket) {
+            S2CMessagePacket packet = (S2CMessagePacket) uPacket;
+
+            SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE(String.format("[Racer] %s", packet.message)));
         }
     }
 }

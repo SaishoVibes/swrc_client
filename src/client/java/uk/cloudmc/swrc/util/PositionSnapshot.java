@@ -6,9 +6,9 @@ import net.minecraft.util.math.Vec3d;
 public class PositionSnapshot {
 
     private final Vec3d position;
-    private final AbstractClientPlayerEntity player;
+    private final String player;
 
-    public PositionSnapshot(AbstractClientPlayerEntity player, Vec3d position) {
+    public PositionSnapshot(String player, Vec3d position) {
         this.position = position;
         this.player = player;
     }
@@ -17,7 +17,7 @@ public class PositionSnapshot {
         return position;
     }
 
-    public AbstractClientPlayerEntity getPlayer() {
+    public String getPlayer() {
         return player;
     }
 }

@@ -3,7 +3,10 @@ package uk.cloudmc.swrc.util;
 import com.google.gson.annotations.Expose;
 import net.fabricmc.loader.impl.lib.sat4j.core.Vec;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.entity.ai.brain.task.RamImpactTask;
 import net.minecraft.util.math.Vec3d;
+import org.slf4j.spi.LocationAwareLogger;
+import uk.cloudmc.swrc.SWRC;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,44 +21,70 @@ public class Checkpoint {
     private double lineLength;
     private Vec3d center;
 
-    HashMap<AbstractClientPlayerEntity, Boolean> checkpoint_sides = new HashMap<>();
+    HashMap<String, Boolean> checkpoint_sides = new HashMap<>();
+
+    private class SideResult {
+        public final boolean line;
+        public final boolean between;
+
+        public SideResult(boolean line, boolean between) {
+            this.line = line;
+            this.between = between;
+        }
+    }
 
     public Checkpoint() {}
 
-    public ArrayList<AbstractClientPlayerEntity> getLineCrosses(ArrayList<PositionSnapshot> positionSnapshots) {
-        ArrayList<AbstractClientPlayerEntity> line_crosses = new ArrayList<>();
+    public ArrayList<String> getLineCrosses(ArrayList<PositionSnapshot> positionSnapshots) {
+        ArrayList<String> line_crosses = new ArrayList<>();
 
         for (PositionSnapshot positionSnapshot : positionSnapshots) {
-            if (!checkpoint_sides.containsKey(positionSnapshot.getPlayer())) continue;
+            SideResult side = getSide(positionSnapshot.getPosition());
 
-            boolean side = getSide(positionSnapshot.getPosition());
+            if (!checkpoint_sides.containsKey(positionSnapshot.getPlayer())) {
+                checkpoint_sides.put(positionSnapshot.getPlayer(), side.line);
+            }
+
             boolean last_side = checkpoint_sides.get(positionSnapshot.getPlayer());
 
-            if (side != last_side) {
-                if (side) {
+            if (side.line != last_side) {
+                if (side.line && side.between) {
                     line_crosses.add(positionSnapshot.getPlayer());
+
+                    checkpoint_sides.put(positionSnapshot.getPlayer(), true);
+                    continue;
                 }
 
-                checkpoint_sides.put(positionSnapshot.getPlayer(), side);
+                checkpoint_sides.put(positionSnapshot.getPlayer(), false);
             }
         }
 
         return line_crosses;
     }
 
-    public boolean getSide(Vec3d position) {
+    public SideResult getSide(Vec3d position) {
         if (left == null || right == null) {
             throw new RuntimeException("Left or Right not set on checkpoint");
         }
 
-        double between_factor = left.distanceTo(position) - right.distanceTo(position);
-        boolean between = between_factor > (lineLength - 1) && between_factor > (-lineLength + 1);
+        double between_factor = Math.sqrt(
+                Math.pow(left.getX() - position.getX(), 2)
+                + Math.pow(left.getZ() - position.getZ(), 2)
+        ) - Math.sqrt(
+                Math.pow(right.getX() - position.getX(), 2)
+                + Math.pow(right.getZ() - position.getZ(), 2)
+        );
+
+        boolean between = Math.abs(between_factor) < lineLength - 1 && position.isInRange(this.center, lineLength / 1.5);
+        boolean line;
 
         if (left.getX() > right.getX()) {
-            return (position.getZ()-left.getZ()) > safeDivide(left.getZ()-right.getZ(), left.getX()-right.getX()) * (position.getX()-left.getX()) && between;
+            line = (position.getZ()-left.getZ()) > safeDivide(left.getZ()-right.getZ(), left.getX()-right.getX()) * (position.getX()-left.getX()) && between;
         } else {
-            return (position.getZ()-left.getZ()) < safeDivide(left.getZ()-right.getZ(), left.getX()-right.getX()) * (position.getX()-left.getX()) && between;
+            line = (position.getZ()-left.getZ()) < safeDivide(left.getZ()-right.getZ(), left.getX()-right.getX()) * (position.getX()-left.getX()) && between;
         }
+
+        return new SideResult(line, between);
     }
 
     public boolean isValid() {
@@ -85,10 +114,13 @@ public class Checkpoint {
         recalculate();
     }
 
-    private void recalculate() {
+    public void recalculate() {
         if (left == null || right == null) return;
 
-        lineLength = left.distanceTo(right);
+        lineLength = Math.sqrt(
+                Math.pow(left.getX() - right.getX(), 2)
+                + Math.pow(left.getZ() - right.getZ(), 2)
+        );
         center = left.add(right).multiply(0.5d);
     }
 

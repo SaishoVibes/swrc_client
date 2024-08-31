@@ -29,11 +29,23 @@ public class Track {
         this.name = name;
         this.minimumLapTime = minimumLapTime;
         this.checkpoints = checkpoints;
+
+        for (Checkpoint checkpoint : this.checkpoints) {
+            checkpoint.recalculate();
+        }
     }
 
     public String serialize() {
         return gsonSerializer.toJson(this);
     }
 
-    public static Track deserialize(String src) { return gsonSerializer.fromJson(src, Track.class); }
+    public static Track deserialize(String src) {
+        Track track = gsonSerializer.fromJson(src, Track.class);
+
+        for (Checkpoint checkpoint : track.checkpoints) {
+            checkpoint.recalculate();
+        }
+
+        return track;
+    }
 }
