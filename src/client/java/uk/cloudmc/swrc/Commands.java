@@ -3,13 +3,16 @@ package uk.cloudmc.swrc;
 import com.google.gson.JsonParseException;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.network.ClientCommandSource;
 import net.minecraft.command.CommandSource;
 import net.minecraft.util.math.Vec3d;
 import uk.cloudmc.swrc.net.packets.C2SModifyRacerPacket;
 import uk.cloudmc.swrc.net.packets.C2SPushTrackPacket;
+import uk.cloudmc.swrc.net.packets.C2SRaceState;
 import uk.cloudmc.swrc.track.Track;
 import uk.cloudmc.swrc.util.ChatFormatter;
 import uk.cloudmc.swrc.util.Checkpoint;
@@ -104,6 +107,25 @@ public class Commands {
                     context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as no TrackBuilder has been created"));
                     return 1;
                 }))
+                .then(ClientCommandManager.literal("pit").executes(context -> {
+                    TrackBuilder trackBuilder = SWRC.getTrackBuilder();
+                    if (trackBuilder != null) {
+                        if (trackBuilder.checkpointBuilder.canFinalize()) {
+                            Checkpoint new_checkpoint = trackBuilder.checkpointBuilder.finalizeCheckpoint();
+
+                            trackBuilder.setPit(new_checkpoint);
+
+                            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Successfully finalized pit"));
+                            return 0;
+                        }
+
+                        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as pit is invalid"));
+                        return 1;
+                    }
+
+                    context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as no TrackBuilder has been created"));
+                    return 1;
+                }))
                 .then(ClientCommandManager.literal("done").executes(context -> {
                     TrackBuilder trackBuilder = SWRC.getTrackBuilder();
                     if (trackBuilder != null) {
@@ -131,6 +153,7 @@ public class Commands {
                     context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("id = " + trackBuilder.id));
                     context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("name = " + trackBuilder.getName()));
                     context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("minLapTime = " + trackBuilder.getMinimumLapTime()));
+                    context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("pit_counts_as_lap = " + trackBuilder.getMinimumLapTime()));
 
                     return 0;
                 }
@@ -139,7 +162,7 @@ public class Commands {
                 return 1;
             })
                 .then(ClientCommandManager.argument("meta", StringArgumentType.string()).suggests((context, builder) -> {
-                    return CommandSource.suggestMatching(new String[] {"min_lap_time", "name"}, builder);
+                    return CommandSource.suggestMatching(new String[] {"min_lap_time", "name", "pit_counts_as_lap"}, builder);
                 }).executes(context -> {
                     String meta_category = StringArgumentType.getString(context, "meta");
 
@@ -151,6 +174,9 @@ public class Commands {
                                 break;
                             case "name":
                                 context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("name is currently: " + trackBuilder.getName()));
+                                break;
+                            case "pit_counts_as_lap":
+                                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("pit_counts_as_lap is currently: " + trackBuilder.getPitCountsAsLap()));
                                 break;
                             default:
                                 context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(meta_category + " does not exist"));
@@ -177,6 +203,10 @@ public class Commands {
                                 case "name":
                                     trackBuilder.setName(value);
                                     context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Set name to: " + value));
+                                    break;
+                                case "pit_counts_as_lap":
+                                    trackBuilder.setPitCountsAsLap(value.equals(true));
+                                    context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Set pit_counts_as_lap to: " + value));
                                     break;
                                 default:
                                     context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(meta_category + " does not exist"));
@@ -283,18 +313,47 @@ public class Commands {
             );
     //endregion
 
+    public static int processUpdateRaceState(CommandContext<FabricClientCommandSource> context, Race.RaceState state) {
+        Race activeRace = SWRC.getRace();
+
+        if (activeRace != null) {
+            if (WebsocketManager.rcSocketAvalible()) {
+                C2SRaceState packet = new C2SRaceState();
+
+                packet.state = state;
+
+                WebsocketManager.rcWebsocketConnection.sendPacket(packet);
+
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Sending request to update state to %s", state)));
+
+                return 0;
+            }
+
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Socket not available"));
+
+            return 1;
+        }
+
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("No active race present"));
+
+        return 1;
+    }
+
     public static final LiteralArgumentBuilder<FabricClientCommandSource> race = ClientCommandManager.literal("race").executes(context -> {
             Race activeRace = SWRC.getRace();
 
             if (activeRace != null) {
-                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Active race (stage=%s,#checkpoints=%s)", activeRace.getRaceState(), activeRace.numCheckpoints())));
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Active race (stage=%s,#checkpoints=%s,pit=%s)", activeRace.getRaceState(), activeRace.numCheckpoints(), activeRace.hasPit())));
             } else {
                 context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("No active race present"));
             }
 
-
             return 0;
         })
+        .then(ClientCommandManager.literal("state")
+                .then(ClientCommandManager.literal("SETUP").executes(context -> processUpdateRaceState(context, Race.RaceState.SETUP)))
+                .then(ClientCommandManager.literal("RACE").executes(context -> processUpdateRaceState(context, Race.RaceState.RACE)))
+        )
         .then(ClientCommandManager.literal("player")
             .then(ClientCommandManager.literal("add")
                 .then(ClientCommandManager.argument("name", StringArgumentType.string()).executes(context -> {

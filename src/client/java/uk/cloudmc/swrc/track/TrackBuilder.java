@@ -1,12 +1,12 @@
 package uk.cloudmc.swrc.track;
 
 import net.minecraft.util.math.Vec3d;
-import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.util.Checkpoint;
 
 import java.util.ArrayList;
 
 public class TrackBuilder {
+
     public class CheckpointBuilder {
         public interface FinishedCheckpointHandler {
             void handleCheckpoint(Checkpoint checkpoint);
@@ -69,6 +69,10 @@ public class TrackBuilder {
     private String name = "Unnamed";
     private long minimumLapTime = 0;
 
+    private boolean pitCountsAsLap = false;
+
+    private Checkpoint pit;
+
     public TrackBuilder(String id) {
         this.id = id;
     }
@@ -89,6 +93,14 @@ public class TrackBuilder {
         return minimumLapTime;
     }
 
+    public void setPitCountsAsLap(boolean pitCountsAsLap) {
+        this.pitCountsAsLap = pitCountsAsLap;
+    }
+
+    public boolean getPitCountsAsLap() {
+        return pitCountsAsLap;
+    }
+
     public void setMinimumLapTime(long minimumLapTime) {
         this.minimumLapTime = minimumLapTime;
     }
@@ -97,8 +109,14 @@ public class TrackBuilder {
         return checkpoints.size();
     }
 
+    public void setPit(Checkpoint new_checkpoint) {
+        pit = new_checkpoint;
+    }
+
     public Track finish() {
-        Track track = new Track(id, name, minimumLapTime, checkpoints);
+        Track track = new Track(id, name, minimumLapTime, checkpoints, pitCountsAsLap);
+
+        track.pit = this.pit;
 
         return track;
     }

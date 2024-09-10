@@ -23,7 +23,7 @@ public class SplitTime implements Hud {
 
     @Override
     public boolean shouldRender() {
-        return SWRC.getRace() != null;
+        return SWRC.getRace() != null && SWRC.getRace().getRaceState() == Race.RaceState.RACE;
     }
 
     @Override

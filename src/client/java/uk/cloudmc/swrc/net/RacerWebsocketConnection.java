@@ -36,6 +36,9 @@ public class RacerWebsocketConnection extends AbstractWebsocketConnection {
             case(S2CMessagePacket.packetId):
                 onPacket(new S2CMessagePacket().fromBytes(payload));
                 break;
+            case(S2CRaceState.packetId):
+                onPacket(new S2CRaceState().fromBytes(payload));
+                break;
             default:
                 SWRC.LOGGER.info(String.format("Got unknown packet id %s", packetId));
         }
@@ -77,12 +80,24 @@ public class RacerWebsocketConnection extends AbstractWebsocketConnection {
                 current_race.setRacers(packet.racers);
                 current_race.setLeaderboard(packet.race_leaderboard);
                 current_race.setLapBeginTimes(packet.race_lap_begin);
+                current_race.setPits(packet.racer_pits);
+                current_race.setLapCounts(packet.racer_laps);
+
+                SWRC.LOGGER.info(packet.racer_laps.toString());
             }
         }
         if (uPacket instanceof S2CMessagePacket) {
             S2CMessagePacket packet = (S2CMessagePacket) uPacket;
 
             SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE(String.format("[Racer] %s", packet.message)));
+        }
+        if (uPacket instanceof S2CRaceState) {
+            S2CRaceState packet = (S2CRaceState) uPacket;
+
+            Race current_race = SWRC.getRace();
+            if (current_race != null) {
+                current_race.setRaceState(packet.state);
+            }
         }
     }
 }

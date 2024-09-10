@@ -5,6 +5,7 @@ import uk.cloudmc.swrc.track.Track;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class S2CUpdatePacket extends Packet<S2CUpdatePacket> {
     public static final char packetId = 0x05;
@@ -35,6 +36,10 @@ public class S2CUpdatePacket extends Packet<S2CUpdatePacket> {
     public ArrayList<RaceLeaderboardPosition> race_leaderboard;
     @Expose
     public ArrayList<RaceLeaderboardPosition> race_lap_begin;
+    @Expose
+    public HashMap<String, Integer> racer_pits;
+    @Expose
+    public HashMap<String, Integer> racer_laps;
 
     @Override
     public String toString() {
@@ -42,6 +47,8 @@ public class S2CUpdatePacket extends Packet<S2CUpdatePacket> {
                 "racers=" + racers +
                 ", race_leaderboard=" + race_leaderboard +
                 ", race_lap_begin=" + race_lap_begin +
+                ", racer_pits=" + racer_pits +
+                ", racer_laps=" + racer_laps +
                 '}';
     }
 

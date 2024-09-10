@@ -46,15 +46,9 @@ public class RaceLeaderboard implements Hud {
         int x = 10;
         int y = 10;
 
-
-
-
-        renderBox(graphics, WIDGETS_TEXTURE, 0, 0, x, y, 12, body_height, width);
+        //renderBox(graphics, WIDGETS_TEXTURE, 0, 0, x, y, 12, body_height, width);
 
         graphics.drawTexture(WIDGETS_TEXTURE, x + 3, y + 3, 5, 0, 25, 10);
-
-
-
 
         renderText(graphics, String.format(SWRCConfig.getInstance().header_text, SWRC.getRaceName()), x + 30, y + 4, 0xFFFFFF);
 
@@ -66,6 +60,11 @@ public class RaceLeaderboard implements Hud {
             int start_pos = width - widthOfText("-" + msToTimeString(position.time_delta)) - 2;
 
             renderText(graphics, String.format("%s%s", position.time_delta > 0 ? "+" : "" , msToTimeString(position.time_delta)), x + start_pos, y + 14 + offset * 9 + 4, position.time_delta >= 0 ? 0x00FF00 : 0xFF0000 );
+
+            int pits = race.pits.getOrDefault(position.player_name, 0);
+
+            renderText(graphics, String.format("%s", pits), x + width - 57, y + 14 + offset * 9 + 4, 0x00FFFF );
+            renderText(graphics, String.format("%s", race.laps.getOrDefault(position.player_name, 0)), x + width - 70, y + 14 + offset * 9 + 4, 0xFFFF00 );
 
             offset += 1;
         }

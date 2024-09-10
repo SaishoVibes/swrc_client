@@ -23,15 +23,24 @@ public class Track {
     public final String name;
     @Expose
     public final long minimumLapTime;
+    @Expose
+    public Checkpoint pit;
+    @Expose
+    public final boolean pitCountsAsLap;
 
-    public Track(String id, String name, long minimumLapTime, ArrayList<Checkpoint> checkpoints) {
+    public Track(String id, String name, long minimumLapTime, ArrayList<Checkpoint> checkpoints, boolean pitCountsAsLap) {
         this.id = id;
         this.name = name;
         this.minimumLapTime = minimumLapTime;
         this.checkpoints = checkpoints;
+        this.pitCountsAsLap = pitCountsAsLap;
 
         for (Checkpoint checkpoint : this.checkpoints) {
             checkpoint.recalculate();
+        }
+
+        if (this.pit != null) {
+            this.pit.recalculate();
         }
     }
 

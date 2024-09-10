@@ -9,6 +9,7 @@ import org.slf4j.spi.LocationAwareLogger;
 import uk.cloudmc.swrc.SWRC;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class Checkpoint {
@@ -22,6 +23,7 @@ public class Checkpoint {
     private Vec3d center;
 
     HashMap<String, Boolean> checkpoint_sides = new HashMap<>();
+    HashMap<String, Long> cooldowns = new HashMap<>();
 
     private class SideResult {
         public final boolean line;
@@ -31,16 +33,34 @@ public class Checkpoint {
             this.line = line;
             this.between = between;
         }
+
+        @Override
+        public String toString() {
+            return "SideResult{" +
+                    "line=" + line +
+                    ", between=" + between +
+                    '}';
+        }
     }
 
     public Checkpoint() {}
+
+    public void setCooldownExpire(String name, long timestamp) {
+        cooldowns.put(name, timestamp);
+    }
+
+    public boolean isOnCooldown(String name) {
+        return !(cooldowns.getOrDefault(name, 0l) < System.currentTimeMillis());
+    }
 
     public ArrayList<String> getLineCrosses(ArrayList<PositionSnapshot> positionSnapshots) {
         ArrayList<String> line_crosses = new ArrayList<>();
 
         for (PositionSnapshot positionSnapshot : positionSnapshots) {
-            SideResult side = getSide(positionSnapshot.getPosition());
 
+            if (isOnCooldown(positionSnapshot.getPlayer())) continue;
+
+            SideResult side = getSide(positionSnapshot.getPosition());
             if (!checkpoint_sides.containsKey(positionSnapshot.getPlayer())) {
                 checkpoint_sides.put(positionSnapshot.getPlayer(), side.line);
             }
@@ -50,6 +70,8 @@ public class Checkpoint {
             if (side.line != last_side) {
                 if (side.line && side.between) {
                     line_crosses.add(positionSnapshot.getPlayer());
+
+                    setCooldownExpire(positionSnapshot.getPlayer(), System.currentTimeMillis() + 10000);
 
                     checkpoint_sides.put(positionSnapshot.getPlayer(), true);
                     continue;
@@ -79,9 +101,9 @@ public class Checkpoint {
         boolean line;
 
         if (left.getX() > right.getX()) {
-            line = (position.getZ()-left.getZ()) > safeDivide(left.getZ()-right.getZ(), left.getX()-right.getX()) * (position.getX()-left.getX()) && between;
+            line = (position.getZ()-left.getZ()) > safeDivide(left.getZ()-right.getZ(), left.getX()-right.getX()) * (position.getX()-left.getX());
         } else {
-            line = (position.getZ()-left.getZ()) < safeDivide(left.getZ()-right.getZ(), left.getX()-right.getX()) * (position.getX()-left.getX()) && between;
+            line = (position.getZ()-left.getZ()) < safeDivide(left.getZ()-right.getZ(), left.getX()-right.getX()) * (position.getX()-left.getX());
         }
 
         return new SideResult(line, between);
