@@ -82,8 +82,6 @@ public class RacerWebsocketConnection extends AbstractWebsocketConnection {
                 current_race.setLapBeginTimes(packet.race_lap_begin);
                 current_race.setPits(packet.racer_pits);
                 current_race.setLapCounts(packet.racer_laps);
-
-                SWRC.LOGGER.info(packet.racer_laps.toString());
             }
         }
         if (uPacket instanceof S2CMessagePacket) {

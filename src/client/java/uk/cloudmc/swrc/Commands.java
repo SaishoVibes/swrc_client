@@ -1,14 +1,20 @@
 package uk.cloudmc.swrc;
 
 import com.google.gson.JsonParseException;
+import com.mojang.brigadier.arguments.FloatArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientCommandSource;
 import net.minecraft.command.CommandSource;
+import net.minecraft.entity.vehicle.BoatEntity;
+import net.minecraft.entity.vehicle.ChestBoatEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import uk.cloudmc.swrc.net.packets.C2SModifyRacerPacket;
 import uk.cloudmc.swrc.net.packets.C2SPushTrackPacket;
@@ -394,6 +400,62 @@ public class Commands {
                         context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
                         return 1;
                     }))
+            )
+            .then(ClientCommandManager.literal("near")
+                    .then(ClientCommandManager.argument("range", FloatArgumentType.floatArg(0)).executes(context -> {
+                        float range = FloatArgumentType.getFloat(context, "range");
+
+                        if (WebsocketManager.rcSocketAvalible()) {
+                            int added = 0;
+                            for (AbstractClientPlayerEntity worldPlayer : SWRC.instance.world.getPlayers()) {
+                                if (!(worldPlayer.getVehicle() instanceof BoatEntity) && !(worldPlayer.getVehicle() instanceof ChestBoatEntity)) continue;
+
+                                if (worldPlayer.getPos().distanceTo(SWRC.instance.player.getPos()) <= range) {
+                                    C2SModifyRacerPacket packet = new C2SModifyRacerPacket();
+
+                                    packet.action = C2SModifyRacerPacket.ModifyRacerPacketAction.REMOVE;
+                                    packet.racer_name = worldPlayer.getName().getString();
+
+                                    WebsocketManager.rcWebsocketConnection.sendPacket(packet);
+                                    added += 1;
+                                }
+                            }
+
+                            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Added %s nearby players in boats", added)));
+                            return 0;
+                        }
+
+                        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+                        return 1;
+                    }))
+                    .then(ClientCommandManager.literal("boat")
+                            .then(ClientCommandManager.argument("range", FloatArgumentType.floatArg(0)).executes(context -> {
+                                float range = FloatArgumentType.getFloat(context, "range");
+
+                                if (WebsocketManager.rcSocketAvalible()) {
+                                    int added = 0;
+                                    for (AbstractClientPlayerEntity worldPlayer : SWRC.instance.world.getPlayers()) {
+                                        if (!(worldPlayer.getVehicle() instanceof BoatEntity) && !(worldPlayer.getVehicle() instanceof ChestBoatEntity)) continue;
+
+                                        if (worldPlayer.getPos().distanceTo(SWRC.instance.player.getPos()) <= range) {
+                                            C2SModifyRacerPacket packet = new C2SModifyRacerPacket();
+
+                                            packet.action = C2SModifyRacerPacket.ModifyRacerPacketAction.ADD;
+                                            packet.racer_name = worldPlayer.getName().getString();
+
+                                            WebsocketManager.rcWebsocketConnection.sendPacket(packet);
+                                            added += 1;
+                                        }
+                                    }
+
+                                    context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Added %s nearby players in boats", added)));
+                                    return 0;
+                                }
+
+                                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+                                return 1;
+                            }))
+                    )
             )
         )
         .then(ClientCommandManager.literal("load")

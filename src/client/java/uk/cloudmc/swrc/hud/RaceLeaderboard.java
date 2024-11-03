@@ -55,7 +55,7 @@ public class RaceLeaderboard implements Hud {
         int offset = 0;
         for (S2CUpdatePacket.RaceLeaderboardPosition position : race.raceLeaderboardPositions) {
             renderText(graphics, String.format("%s", offset + 1), x + 4, y + 14 + offset * 9 + 4, 0xFFFFFF);
-            renderText(graphics, String.format("%s", position.player_name), x + 12, y + 14 + offset * 9 + 4, 0xFFFFFF);
+            renderText(graphics, String.format("%s", position.player_name), x + 22, y + 14 + offset * 9 + 4, 0xFFFFFF);
 
             int start_pos = width - widthOfText("-" + msToTimeString(position.time_delta)) - 2;
 
