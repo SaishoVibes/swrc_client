@@ -56,10 +56,9 @@ public class RCWebsocketConnection extends AbstractWebsocketConnection {
         if (uPacket instanceof S2CHandshakePacket) {
             SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[RC] Authenticated as Race Control."));
         }
-        if (uPacket instanceof S2CMessagePacket) {
-            S2CMessagePacket packet = (S2CMessagePacket) uPacket;
+        if (uPacket instanceof S2CMessagePacket packet) {
 
-            SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE(String.format("[Racer] %s", packet.message)));
+            SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE(String.format("[RC] %s", packet.message)));
         }
     }
 }

@@ -1,11 +1,8 @@
 package uk.cloudmc.swrc.hud;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.realms.util.TextRenderingUtils;
 import net.minecraft.util.Identifier;
-import org.joml.Matrix4f;
 import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.SWRCConfig;
@@ -13,7 +10,7 @@ import uk.cloudmc.swrc.net.packets.S2CUpdatePacket;
 
 import java.text.DecimalFormat;
 
-public class RaceLeaderboard implements Hud {
+public class QualiLeaderboard implements Hud {
 
     private static final Identifier WIDGETS_TEXTURE = Identifier.of(SWRC.NAMESPACE, "textures/widgets.png");
     private static final Identifier GREY_TEXTURE = Identifier.of(SWRC.NAMESPACE, "textures/grey.png");
@@ -23,11 +20,11 @@ public class RaceLeaderboard implements Hud {
 
     private static final DecimalFormat decimalFormat = new DecimalFormat("00.000");
 
-    public RaceLeaderboard() {}
+    public QualiLeaderboard() {}
 
     @Override
     public boolean shouldRender() {
-        return SWRC.getRace() != null && SWRC.getRace().getRaceState() != Race.RaceState.QUALI;
+        return SWRC.getRace() != null && SWRC.getRace().getRaceState() == Race.RaceState.QUALI;
     }
 
     @Override
@@ -61,22 +58,17 @@ public class RaceLeaderboard implements Hud {
             if (offset == 2) pos_color = 0x805B2B;
 
             renderText(graphics, String.format("%s", offset + 1), x + 4, y + 14 + offset * 9 + 4, pos_color);
-            renderText(graphics, String.format("%s", position.player_name), x + 22, y + 14 + offset * 9 + 4, race.getFlap() != null && race.getFlap().getPlayer_name().equals(position.player_name) ? 0x9803FC : 0xFFFFFF);
+            renderText(graphics, String.format("%s", position.player_name), x + 22, y + 14 + offset * 9 + 4, 0xFFFFFF);
 
-            if (position.in_pit) {
-                int start_pos = width - widthOfText("IN PIT") - 2;
+            int start_pos = width - widthOfText("-" + msToTimeString(position.time_delta)) - 2;
 
-                renderText(graphics, "IN PIT", x + start_pos, y + 14 + offset * 9 + 4, 0x888888 );
+            renderText(graphics, String.format("%s%s", position.time_delta > 0 ? "+" : "" , msToTimeString(position.time_delta)), x + start_pos, y + 14 + offset * 9 + 4, position.time_delta >= 0 ? 0x00FF00 : 0xFF0000 );
+
+            if (position.flap == -1) {
+                renderText(graphics, "-", x + start_pos - 37, y + 14 + offset * 9 + 4, 0xEBCC34 );
             } else {
-                int start_pos = width - widthOfText("-" + msToTimeString(position.time_delta)) - 2;
-
-                renderText(graphics, String.format("%s%s", position.time_delta > 0 ? "+" : "" , msToTimeString(position.time_delta)), x + start_pos, y + 14 + offset * 9 + 4, position.time_delta >= 0 ? 0x00FF00 : 0xFF0000 );
+                renderText(graphics, String.format("%s", msToTimeString(position.flap)), x + start_pos - 37, y + 14 + offset * 9 + 4, 0xEBCC34 );
             }
-
-            int pits = race.pits.getOrDefault(position.player_name, 0);
-
-            renderText(graphics, String.format("%s", pits), x + width - 57, y + 14 + offset * 9 + 4, 0x00FFFF );
-            renderText(graphics, String.format("%s", race.laps.getOrDefault(position.player_name, 0)), x + width - 70, y + 14 + offset * 9 + 4, 0xFFFF00 );
 
             offset += 1;
         }
@@ -95,7 +87,7 @@ public class RaceLeaderboard implements Hud {
             prefix = String.format("%s:", mins);
         }
 
-        return prefix + this.decimalFormat.format(secconds % 60);
+        return prefix + decimalFormat.format(secconds % 60);
     }
 
     public static void renderText(DrawContext graphics, String text, int x, int y, int color) {

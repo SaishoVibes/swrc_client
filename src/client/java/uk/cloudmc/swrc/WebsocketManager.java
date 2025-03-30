@@ -26,7 +26,7 @@ public class WebsocketManager {
         racerWebsocketConnection = new RacerWebsocketConnection(uri.resolve("racer?token=" + head_token));
         racerWebsocketConnection.connect();
 
-        if (SWRCConfig.getInstance().rc_key.length() > 0) {
+        if (!SWRCConfig.getInstance().rc_key.isEmpty()) {
             if (rcWebsocketConnection != null && rcWebsocketConnection.isOpen()) {
                 rcWebsocketConnection.close();
                 rcWebsocketConnection = null;

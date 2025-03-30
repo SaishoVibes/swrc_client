@@ -1,26 +1,21 @@
 package uk.cloudmc.swrc;
 
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import uk.cloudmc.swrc.net.packets.C2SLineCrossPacket;
-import uk.cloudmc.swrc.net.packets.C2SPitCrossPacket;
-import uk.cloudmc.swrc.net.packets.S2CUpdatePacket;
+import uk.cloudmc.swrc.net.packets.*;
+import uk.cloudmc.swrc.track.Checkpoint;
 import uk.cloudmc.swrc.track.Track;
-import uk.cloudmc.swrc.util.ChatFormatter;
-import uk.cloudmc.swrc.util.Checkpoint;
-import uk.cloudmc.swrc.util.PositionSnapshot;
+import uk.cloudmc.swrc.track.Trap;
+import uk.cloudmc.swrc.util.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 
 public class Race {
 
     public enum RaceState {
-        SETUP,
-        QUALIFY,
-        PRE_RACE,
+        NONE,
+        QUALI,
         RACE,
-        POST_RACE,
     }
 
     public RaceState getRaceState() {
@@ -28,12 +23,14 @@ public class Race {
     }
 
     public ArrayList<S2CUpdatePacket.RaceLeaderboardPosition> raceLeaderboardPositions = new ArrayList<>();
-    public ArrayList<S2CUpdatePacket.RaceLeaderboardPosition> lapBeginTimes = new ArrayList<>();
+    public ArrayList<S2CUpdatePacket.PlayerSplit> lapBeginTimes = new ArrayList<>();
     public HashMap<String, Integer> pits = new HashMap<>();
     public HashMap<String, Integer> laps = new HashMap<>();
+    public HashMap<Integer, HashMap<String, SnapshotTime>> trap_state = new HashMap<>();
 
+    public S2CUpdatePacket.Flap flap;
 
-    private RaceState raceState = RaceState.SETUP;
+    private RaceState raceState = RaceState.NONE;
 
     private final String id;
     private ArrayList<String> racers = new ArrayList<>();
@@ -47,58 +44,114 @@ public class Race {
             checkpoint.recalculate();
         }
 
+        for (Trap trap : track.traps) {
+            trap.enter.recalculate();
+            trap.exit.recalculate();
+        }
+
         if (this.track.pit != null) {
             this.track.pit.recalculate();
         }
+
+        if (this.track.pit_enter != null) {
+            this.track.pit_enter.recalculate();
+        }
+    }
+
+    private ArrayList<String> getNamesFromSnapshots(ArrayList<Snapshot> snapshots) {
+        ArrayList<String> names = new ArrayList<>();
+
+        snapshots.forEach(snapshot -> names.add(snapshot.getPlayer()));
+
+        return names;
     }
 
     public void update() {
-        if (SWRC.instance.world == null || this.raceState != RaceState.RACE) return;
+        if (SWRC.instance.world == null || this.raceState == RaceState.NONE) return;
 
         long update_start = System.currentTimeMillis();
 
-        ArrayList<PositionSnapshot> snapshots = new ArrayList<>();
+        ArrayList<Snapshot> snapshots = new ArrayList<>();
         for (AbstractClientPlayerEntity player: SWRC.instance.world.getPlayers()) {
             if (isRacing(player.getName().getString())) {
-                snapshots.add(new PositionSnapshot(player.getName().getString(), player.getPos()));
+                snapshots.add(new Snapshot(player.getName().getString(), player.getPos(), player.getVelocity()));
             }
         }
 
-        HashMap<Integer, ArrayList<String>> checkpoint_crosses = new HashMap<>();
-        ArrayList<String> pit_crosses = null;
+        HashMap<Integer, ArrayList<Snapshot>> checkpoint_crosses = new HashMap<>();
+        ArrayList<Snapshot> pit_crosses = null;
+        ArrayList<Snapshot> pit_enter_crosses = null;
 
 
         if (track.pit != null) {
             pit_crosses = track.pit.getLineCrosses(snapshots);
         }
 
+        if (track.pit_enter != null) {
+             pit_enter_crosses = track.pit_enter.getLineCrosses(snapshots);
+        }
+
         for (int checkpoint_index = 0; checkpoint_index < track.checkpoints.size(); checkpoint_index++) {
             Checkpoint checkpoint = track.checkpoints.get(checkpoint_index);
 
-            ArrayList<String> line_crosses = checkpoint.getLineCrosses(snapshots);
+            ArrayList<Snapshot> line_crosses = checkpoint.getLineCrosses(snapshots);
 
-            if (line_crosses.size() > 0) {
+            if (!line_crosses.isEmpty()) {
                 checkpoint_crosses.put(checkpoint_index, line_crosses);
             }
         }
 
-        ArrayList<String> crosses = checkpoint_crosses.getOrDefault(0, new ArrayList<>());
+        for (int trap_index = 0; trap_index < track.traps.size(); trap_index++) {
+            Trap trap = track.traps.get(trap_index);
+
+            HashMap<String, SnapshotTime> state = trap_state.getOrDefault(trap_index, new HashMap<>());
+
+            ArrayList<Snapshot> trap_enter_crosses = trap.enter.getLineCrosses(snapshots);
+            ArrayList<Snapshot> trap_exit_crosses = trap.exit.getLineCrosses(snapshots);
+
+            for (Snapshot trapEnterCross : trap_exit_crosses) {
+                SnapshotTime enter = state.get(trapEnterCross.getPlayer());
+                if (enter != null && WebsocketManager.rcSocketAvalible()) {
+                    SpeedTrapResult speedTrapResult = new SpeedTrapResult();
+
+                    speedTrapResult.setPlayer(trapEnterCross.getPlayer());
+                    speedTrapResult.setEnter(enter);
+                    speedTrapResult.setExit(new SnapshotTime(trapEnterCross, update_start));
+
+                    C2SSpeedTrapPacket speedTrapPacket = new C2SSpeedTrapPacket();
+
+                    speedTrapPacket.speedTrapResult = speedTrapResult;
+
+                    WebsocketManager.rcWebsocketConnection.sendPacket(speedTrapPacket);
+                }
+            }
+
+            for (Snapshot trapEnterCross : trap_enter_crosses) {
+                state.put(trapEnterCross.getPlayer(), new SnapshotTime(trapEnterCross, update_start));
+            }
+
+            trap_state.put(trap_index, state);
+        }
+
+        ArrayList<Snapshot> line_crosses = checkpoint_crosses.getOrDefault(0, new ArrayList<>());
 
         if (track.pitCountsAsLap && pit_crosses != null) {
-            for (String pit_cross : pit_crosses) {
-                crosses.add(pit_cross);
-            }
+            line_crosses.addAll(pit_crosses);
         }
 
-        if (crosses.size() > 0) {
-            checkpoint_crosses.put(0, crosses);
+        if (!line_crosses.isEmpty()) {
+            checkpoint_crosses.put(0, line_crosses);
         }
 
-        if (checkpoint_crosses.size() > 0) {
+        if (!checkpoint_crosses.isEmpty()) {
             C2SLineCrossPacket lineCrossPacket = new C2SLineCrossPacket();
 
+            HashMap<Integer, ArrayList<String>> checkpoint_crosses_names = new HashMap<>();
+
+            checkpoint_crosses.forEach((checkpoint, crosses) -> checkpoint_crosses_names.put(checkpoint, getNamesFromSnapshots(crosses)));
+
             lineCrossPacket.timestamp = update_start;
-            lineCrossPacket.checkpoint_crosses = checkpoint_crosses;
+            lineCrossPacket.checkpoint_crosses = checkpoint_crosses_names;
 
 
             if (WebsocketManager.rcSocketAvalible()) {
@@ -106,14 +159,25 @@ public class Race {
             }
         }
 
-        if (pit_crosses != null && pit_crosses.size() > 0) {
+        if (pit_crosses != null && !pit_crosses.isEmpty()) {
             C2SPitCrossPacket pitCrossPacket = new C2SPitCrossPacket();
 
             pitCrossPacket.timestamp = update_start;
-            pitCrossPacket.pit_crosses = pit_crosses;
+            pitCrossPacket.pit_crosses = getNamesFromSnapshots(pit_crosses);
 
             if (WebsocketManager.rcSocketAvalible()) {
                 WebsocketManager.rcWebsocketConnection.sendPacket(pitCrossPacket);
+            }
+        }
+
+        if (pit_enter_crosses != null && !pit_enter_crosses.isEmpty()) {
+            C2SPitEnterPacket pitEnterPacket = new C2SPitEnterPacket();
+
+            pitEnterPacket.timestamp = update_start;
+            pitEnterPacket.pit_enter_crosses = getNamesFromSnapshots(pit_enter_crosses);
+
+            if (WebsocketManager.rcSocketAvalible()) {
+                WebsocketManager.rcWebsocketConnection.sendPacket(pitEnterPacket);
             }
         }
     }
@@ -128,9 +192,9 @@ public class Race {
     }
 
     public long getLapBeginTime(String racer) {
-        for (S2CUpdatePacket.RaceLeaderboardPosition v : this.lapBeginTimes) {
+        for (S2CUpdatePacket.PlayerSplit v : this.lapBeginTimes) {
             if (v.player_name.equals(racer)) {
-                return v.time_delta;
+                return v.timestamp;
             }
         }
 
@@ -161,11 +225,19 @@ public class Race {
         this.pits = pits;
     }
 
+    public S2CUpdatePacket.Flap getFlap() {
+        return flap;
+    }
+
+    public void setFlap(S2CUpdatePacket.Flap flap) {
+        this.flap = flap;
+    }
+
     public void setLeaderboard(ArrayList<S2CUpdatePacket.RaceLeaderboardPosition> raceLeaderboardPositions) {
         this.raceLeaderboardPositions = raceLeaderboardPositions;
     }
 
-    public void setLapBeginTimes(ArrayList<S2CUpdatePacket.RaceLeaderboardPosition> lapBeginTimes) {
+    public void setLapBeginTimes(ArrayList<S2CUpdatePacket.PlayerSplit> lapBeginTimes) {
         this.lapBeginTimes = lapBeginTimes;
     }
 
@@ -178,5 +250,4 @@ public class Race {
 
         return 0;
     }
-
 }

@@ -17,7 +17,7 @@ public class SWRCConfig implements ConfigData {
     private static SWRCConfig instance;
 
     public String rc_key = "";
-    public String header_text = "S1 @ %s";
+    public String header_text = "S2 @ %s";
 
     public static SWRCConfig getInstance() {
         if (instance == null) {

@@ -3,7 +3,6 @@ package uk.cloudmc.swrc.track;
 import com.google.gson.*;
 import com.google.gson.annotations.Expose;
 import net.minecraft.util.math.Vec3d;
-import uk.cloudmc.swrc.util.Checkpoint;
 import uk.cloudmc.swrc.util.Vec3dTypeAdapter;
 
 import java.util.ArrayList;
@@ -20,16 +19,21 @@ public class Track {
     @Expose
     public final ArrayList<Checkpoint> checkpoints;
     @Expose
+    public final ArrayList<Trap> traps;
+    @Expose
     public final String name;
     @Expose
     public final long minimumLapTime;
     @Expose
     public Checkpoint pit;
     @Expose
+    public Checkpoint pit_enter;
+    @Expose
     public final boolean pitCountsAsLap;
 
-    public Track(String id, String name, long minimumLapTime, ArrayList<Checkpoint> checkpoints, boolean pitCountsAsLap) {
+    public Track(String id, String name, long minimumLapTime, ArrayList<Checkpoint> checkpoints, ArrayList<Trap> traps, boolean pitCountsAsLap) {
         this.id = id;
+        this.traps = traps;
         this.name = name;
         this.minimumLapTime = minimumLapTime;
         this.checkpoints = checkpoints;
@@ -39,8 +43,17 @@ public class Track {
             checkpoint.recalculate();
         }
 
+        for (Trap trap: this.traps) {
+            trap.enter.recalculate();
+            trap.exit.recalculate();
+        }
+
         if (this.pit != null) {
             this.pit.recalculate();
+        }
+
+        if (this.pit_enter != null) {
+            this.pit_enter.recalculate();
         }
     }
 
@@ -53,6 +66,21 @@ public class Track {
 
         for (Checkpoint checkpoint : track.checkpoints) {
             checkpoint.recalculate();
+        }
+
+        if (track.traps != null) {
+            for (Trap trap: track.traps) {
+                trap.enter.recalculate();
+                trap.exit.recalculate();
+            }
+        }
+
+        if (track.pit != null) {
+            track.pit.recalculate();
+        }
+
+        if (track.pit_enter != null) {
+            track.pit_enter.recalculate();
         }
 
         return track;

@@ -1,15 +1,10 @@
-package uk.cloudmc.swrc.util;
+package uk.cloudmc.swrc.track;
 
 import com.google.gson.annotations.Expose;
-import net.fabricmc.loader.impl.lib.sat4j.core.Vec;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.entity.ai.brain.task.RamImpactTask;
 import net.minecraft.util.math.Vec3d;
-import org.slf4j.spi.LocationAwareLogger;
-import uk.cloudmc.swrc.SWRC;
+import uk.cloudmc.swrc.util.Snapshot;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 
 public class Checkpoint {
@@ -25,23 +20,15 @@ public class Checkpoint {
     HashMap<String, Boolean> checkpoint_sides = new HashMap<>();
     HashMap<String, Long> cooldowns = new HashMap<>();
 
-    private class SideResult {
-        public final boolean line;
-        public final boolean between;
-
-        public SideResult(boolean line, boolean between) {
-            this.line = line;
-            this.between = between;
-        }
-
+    private record SideResult(boolean line, boolean between) {
         @Override
-        public String toString() {
-            return "SideResult{" +
-                    "line=" + line +
-                    ", between=" + between +
-                    '}';
+            public String toString() {
+                return "SideResult{" +
+                        "line=" + line +
+                        ", between=" + between +
+                        '}';
+            }
         }
-    }
 
     public Checkpoint() {}
 
@@ -50,13 +37,13 @@ public class Checkpoint {
     }
 
     public boolean isOnCooldown(String name) {
-        return !(cooldowns.getOrDefault(name, 0l) < System.currentTimeMillis());
+        return !(cooldowns.getOrDefault(name, 0L) < System.currentTimeMillis());
     }
 
-    public ArrayList<String> getLineCrosses(ArrayList<PositionSnapshot> positionSnapshots) {
-        ArrayList<String> line_crosses = new ArrayList<>();
+    public ArrayList<Snapshot> getLineCrosses(ArrayList<Snapshot> positionSnapshots) {
+        ArrayList<Snapshot> line_crosses = new ArrayList<>();
 
-        for (PositionSnapshot positionSnapshot : positionSnapshots) {
+        for (Snapshot positionSnapshot : positionSnapshots) {
 
             if (isOnCooldown(positionSnapshot.getPlayer())) continue;
 
@@ -69,7 +56,7 @@ public class Checkpoint {
 
             if (side.line != last_side) {
                 if (side.line && side.between) {
-                    line_crosses.add(positionSnapshot.getPlayer());
+                    line_crosses.add(positionSnapshot);
 
                     setCooldownExpire(positionSnapshot.getPlayer(), System.currentTimeMillis() + 10000);
 
@@ -84,7 +71,7 @@ public class Checkpoint {
         return line_crosses;
     }
 
-    public SideResult getSide(Vec3d position) {
+    private SideResult getSide(Vec3d position) {
         if (left == null || right == null) {
             throw new RuntimeException("Left or Right not set on checkpoint");
         }
@@ -97,7 +84,11 @@ public class Checkpoint {
                 + Math.pow(right.getZ() - position.getZ(), 2)
         );
 
-        boolean between = Math.abs(between_factor) < lineLength - 1 && position.isInRange(this.center, lineLength / 1.5);
+        double lowest = Math.min(left.y, right.y);
+        double highest = Math.max(left.y, right.y);
+        boolean within_height = position.y >= lowest - 2 && position.y <= highest + 2;
+
+        boolean between = Math.abs(between_factor) < lineLength - 1 && position.isInRange(this.center, lineLength / 1.5) && within_height;
         boolean line;
 
         if (left.getX() > right.getX()) {
@@ -143,7 +134,7 @@ public class Checkpoint {
                 Math.pow(left.getX() - right.getX(), 2)
                 + Math.pow(left.getZ() - right.getZ(), 2)
         );
-        center = left.add(right).multiply(0.5d);
+        center = getCenter();
     }
 
     private double safeDivide(double x, double y) {

@@ -27,7 +27,7 @@ public class SWRCModMenu implements ModMenuApi {
                     .build());
 
             Category.addEntry(packet.startStrField(Text.of("Race Header Text"), config.header_text)
-                    .setDefaultValue("S1 @ %s")
+                    .setDefaultValue("S2 @ %s")
                     .setSaveConsumer(newValue -> config.header_text = newValue)
                     .build());
 

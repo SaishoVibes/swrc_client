@@ -3,6 +3,7 @@ package uk.cloudmc.swrc.net;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.SWRC;
+import uk.cloudmc.swrc.hud.BestLap;
 import uk.cloudmc.swrc.net.packets.*;
 import uk.cloudmc.swrc.util.ChatFormatter;
 
@@ -39,6 +40,9 @@ public class RacerWebsocketConnection extends AbstractWebsocketConnection {
             case(S2CRaceState.packetId):
                 onPacket(new S2CRaceState().fromBytes(payload));
                 break;
+            case(S2CEndRacePacket.packetId):
+                onPacket(new S2CEndRacePacket().fromBytes(payload));
+                break;
             default:
                 SWRC.LOGGER.info(String.format("Got unknown packet id %s", packetId));
         }
@@ -65,15 +69,13 @@ public class RacerWebsocketConnection extends AbstractWebsocketConnection {
         if (uPacket instanceof S2CHandshakePacket) {
             SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[Racer] Authenticated."));
         }
-        if (uPacket instanceof S2CNewRacePacket) {
-            S2CNewRacePacket packet = (S2CNewRacePacket) uPacket;
+        if (uPacket instanceof S2CNewRacePacket packet) {
 
             SWRC.setRace(new Race(packet.race_id, packet.track));
 
             SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE(String.format("[Racer] Received new race from server (%s)", packet.race_id)));
         }
-        if (uPacket instanceof S2CUpdatePacket) {
-            S2CUpdatePacket packet = (S2CUpdatePacket) uPacket;
+        if (uPacket instanceof S2CUpdatePacket packet) {
 
             Race current_race = SWRC.getRace();
             if (current_race != null) {
@@ -82,19 +84,28 @@ public class RacerWebsocketConnection extends AbstractWebsocketConnection {
                 current_race.setLapBeginTimes(packet.race_lap_begin);
                 current_race.setPits(packet.racer_pits);
                 current_race.setLapCounts(packet.racer_laps);
+
+                if (current_race.flap == null || current_race.flap.hashCode() != packet.flap.hashCode()) ((BestLap) SWRC.bestLap).show();
+
+                current_race.setFlap(packet.flap);
             }
         }
-        if (uPacket instanceof S2CMessagePacket) {
-            S2CMessagePacket packet = (S2CMessagePacket) uPacket;
+        if (uPacket instanceof S2CMessagePacket packet) {
 
             SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE(String.format("[Racer] %s", packet.message)));
         }
-        if (uPacket instanceof S2CRaceState) {
-            S2CRaceState packet = (S2CRaceState) uPacket;
+        if (uPacket instanceof S2CRaceState packet) {
 
             Race current_race = SWRC.getRace();
             if (current_race != null) {
                 current_race.setRaceState(packet.state);
+            }
+        }
+        if (uPacket instanceof S2CEndRacePacket packet) {
+            Race current_race = SWRC.getRace();
+
+            if (current_race != null) {
+                SWRC.setRace(null);
             }
         }
     }

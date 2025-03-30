@@ -12,26 +12,29 @@ import java.text.DecimalFormat;
 
 public class SplitTime implements Hud {
 
-    private static final Identifier WIDGETS_TEXTURE = new Identifier(SWRC.NAMESPACE, "textures/widgets.png");
+    private static final Identifier WIDGETS_TEXTURE = Identifier.of(SWRC.NAMESPACE, "textures/widgets.png");
 
     private int scaledWidth;
     private int scaledHeight;
 
-    private static DecimalFormat decimalFormat = new DecimalFormat("00.000");
+    private static final DecimalFormat decimalFormat = new DecimalFormat("00.000");
 
     public SplitTime() {}
 
     @Override
     public boolean shouldRender() {
-        return SWRC.getRace() != null && SWRC.getRace().getRaceState() == Race.RaceState.RACE;
+        if (SWRC.instance.player == null) return false;
+        if (SWRC.getRace() == null) return false;
+        if (SWRC.getRace().getRaceState() == Race.RaceState.NONE) return false;
+
+        return SWRC.getRace().isRacing(SWRC.instance.player.getName().getString());
     }
 
     @Override
     public void render(DrawContext graphics, float tickDelta) {
         Race race = SWRC.getRace();
 
-
-        if (race.raceLeaderboardPositions.size() == 0) return;
+        if (race.raceLeaderboardPositions.isEmpty()) return;
 
         this.scaledWidth = SWRC.instance.getWindow().getScaledWidth();
         this.scaledHeight = SWRC.instance.getWindow().getScaledHeight();

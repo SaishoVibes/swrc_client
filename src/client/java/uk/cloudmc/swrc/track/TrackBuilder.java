@@ -1,13 +1,12 @@
 package uk.cloudmc.swrc.track;
 
 import net.minecraft.util.math.Vec3d;
-import uk.cloudmc.swrc.util.Checkpoint;
 
 import java.util.ArrayList;
 
 public class TrackBuilder {
 
-    public class CheckpointBuilder {
+    public static class CheckpointBuilder {
         public interface FinishedCheckpointHandler {
             void handleCheckpoint(Checkpoint checkpoint);
         }
@@ -58,20 +57,79 @@ public class TrackBuilder {
 
             return finished_checkpoint;
         }
+
+        public Checkpoint getActiveCheckpoint() {
+            return activeCheckpoint;
+        }
     }
 
+    public static class TrapBuilder {
+        public interface FinishedTrapHandler {
+            void handleTrap(Trap checkpoint);
+        }
+
+        private Trap activeTrap;
+
+        public boolean newTrap(FinishedTrapHandler handler) {
+            if (hasActiveTrap()) {
+                if (!canFinalize()) {
+                    return false;
+                }
+
+                handler.handleTrap(activeTrap);
+            }
+
+            activeTrap = new Trap();
+
+            return true;
+        }
+
+        public boolean hasActiveTrap() {
+            return activeTrap != null;
+        }
+
+        public boolean canFinalize() {
+            if (activeTrap == null) return false;
+            if (!activeTrap.isValid()) return false;
+
+            return true;
+        }
+
+        public void setEnter(Checkpoint checkpoint) {
+            activeTrap.enter = checkpoint;
+        }
+
+        public void setExit(Checkpoint checkpoint) {
+            activeTrap.exit = checkpoint;
+        }
+
+        public Trap finalizeTrap() {
+            Trap finished_trap = activeTrap;
+
+            activeTrap = null;
+
+            return finished_trap;
+        }
+
+        public Trap getActiveTrap() {
+            return activeTrap;
+        }
+    }
 
     public final CheckpointBuilder checkpointBuilder = new CheckpointBuilder();
+    public final TrapBuilder trapBuilder = new TrapBuilder();
 
     public final String id;
 
     private ArrayList<Checkpoint> checkpoints = new ArrayList<>();
+    private ArrayList<Trap> traps = new ArrayList<>();
     private String name = "Unnamed";
     private long minimumLapTime = 0;
 
     private boolean pitCountsAsLap = false;
 
     private Checkpoint pit;
+    private Checkpoint pitEnter;
 
     public TrackBuilder(String id) {
         this.id = id;
@@ -79,6 +137,10 @@ public class TrackBuilder {
 
     public void addCheckpoint(Checkpoint checkpoint) {
         checkpoints.add(checkpoint);
+    }
+
+    public void addTrap(Trap trap) {
+        traps.add(trap);
     }
 
     public String getName() {
@@ -109,14 +171,42 @@ public class TrackBuilder {
         return checkpoints.size();
     }
 
+    public Checkpoint getPit() {
+        return pit;
+    }
+
     public void setPit(Checkpoint new_checkpoint) {
         pit = new_checkpoint;
     }
 
+    public boolean hasPit() {
+        return pit != null;
+    }
+
+    public Checkpoint getPitEnter() {
+        return pitEnter;
+    }
+
+    public void setPitEnter(Checkpoint pit_enter) {
+        this.pitEnter = pit_enter;
+    }
+
+    public boolean hasPitEnter() {
+        return this.pitEnter != null;
+    }
+
+    public ArrayList<Checkpoint> getCheckpoints() {
+        return checkpoints;
+    }
+    public ArrayList<Trap> getTraps() {
+        return traps;
+    }
+
     public Track finish() {
-        Track track = new Track(id, name, minimumLapTime, checkpoints, pitCountsAsLap);
+        Track track = new Track(id, name, minimumLapTime, checkpoints, traps, pitCountsAsLap);
 
         track.pit = this.pit;
+        track.pit_enter = this.pitEnter;
 
         return track;
     }

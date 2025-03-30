@@ -1,9 +1,9 @@
 {
 	"schemaVersion": 1,
 	"id": "swrc",
-	"version": "2.0.4",
+	"version": "2.3.1",
 	"name": "SW Race Control",
-	"description": "Mod for timing and controlling races on stoneworks @ Formula Abex",
+	"description": "Mod for timing and controlling races on Stoneworks @ Formula Abex",
 	"authors": [
 		"localhackerman"
 	],
@@ -28,7 +28,7 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.15.11",
-		"minecraft": "~1.20.4",
+		"minecraft": ">=1.21",
 		"java": ">=17",
 		"fabric-api": "*",
 		"cloth-config": ">=13.0.121"
