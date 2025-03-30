@@ -31,6 +31,10 @@ public class SWRCModMenu implements ModMenuApi {
                     .setSaveConsumer(newValue -> config.header_text = newValue)
                     .build());
 
+            Category.addEntry(packet.startBooleanToggle(Text.of("Toggle Position Tracking"), config.pos_tracking)
+                    .setDefaultValue(false)
+                    .setSaveConsumer(newValue -> config.pos_tracking = newValue)
+                    .build());
 
             return builder.build();
         };

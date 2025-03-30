@@ -111,7 +111,7 @@ public class Race {
 
             for (Snapshot trapEnterCross : trap_exit_crosses) {
                 SnapshotTime enter = state.get(trapEnterCross.getPlayer());
-                if (enter != null && WebsocketManager.rcSocketAvalible()) {
+                if (enter != null && WebsocketManager.rcSocketAvalible() && SWRCConfig.getInstance().pos_tracking) {
                     SpeedTrapResult speedTrapResult = new SpeedTrapResult();
 
                     speedTrapResult.setPlayer(trapEnterCross.getPlayer());
@@ -154,7 +154,7 @@ public class Race {
             lineCrossPacket.checkpoint_crosses = checkpoint_crosses_names;
 
 
-            if (WebsocketManager.rcSocketAvalible()) {
+            if (WebsocketManager.rcSocketAvalible() && SWRCConfig.getInstance().pos_tracking) {
                 WebsocketManager.rcWebsocketConnection.sendPacket(lineCrossPacket);
             }
         }
@@ -165,7 +165,7 @@ public class Race {
             pitCrossPacket.timestamp = update_start;
             pitCrossPacket.pit_crosses = getNamesFromSnapshots(pit_crosses);
 
-            if (WebsocketManager.rcSocketAvalible()) {
+            if (WebsocketManager.rcSocketAvalible() && SWRCConfig.getInstance().pos_tracking) {
                 WebsocketManager.rcWebsocketConnection.sendPacket(pitCrossPacket);
             }
         }
@@ -176,7 +176,7 @@ public class Race {
             pitEnterPacket.timestamp = update_start;
             pitEnterPacket.pit_enter_crosses = getNamesFromSnapshots(pit_enter_crosses);
 
-            if (WebsocketManager.rcSocketAvalible()) {
+            if (WebsocketManager.rcSocketAvalible() && SWRCConfig.getInstance().pos_tracking) {
                 WebsocketManager.rcWebsocketConnection.sendPacket(pitEnterPacket);
             }
         }
