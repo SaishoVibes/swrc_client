@@ -141,6 +141,7 @@ public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
         RenderSystem.lineWidth(prevLineWidth);
     }
 
+
     @Override
     public void beforeDebugRender(WorldRenderContext context) {
         TrackBuilder trackBuilder = SWRC.getTrackBuilder();

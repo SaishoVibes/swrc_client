@@ -80,7 +80,9 @@ public class RaceLeaderboard implements Hud {
 
             offset += 1;
         }
-
+        if (race.getFlap() != null) {
+            renderText(graphics, String.format("%s: %s", race.getFlap().getPlayer_name(), msToTimeString(race.getFlap().getTime())), x + 22, y + 14 + offset * 9 + 4, 0xAFFF14);
+        }
         RenderSystem.disableBlend();
     }
 
@@ -99,7 +101,7 @@ public class RaceLeaderboard implements Hud {
     }
 
     public static void renderText(DrawContext graphics, String text, int x, int y, int color) {
-        graphics.drawTextWithShadow(SWRC.instance.textRenderer, text, x, y, color);
+        graphics.drawText(SWRC.instance.textRenderer, text, x, y, color, false);
     }
 
     public static int widthOfText(String text) {
