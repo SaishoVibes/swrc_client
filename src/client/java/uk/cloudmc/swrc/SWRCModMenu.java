@@ -36,6 +36,11 @@ public class SWRCModMenu implements ModMenuApi {
                     .setSaveConsumer(newValue -> config.pos_tracking = newValue)
                     .build());
 
+            Category.addEntry(packet.startBooleanToggle(Text.of("Toggle Text Shadow"), config.leaderboard_shadow)
+                    .setDefaultValue(false)
+                    .setSaveConsumer(newValue -> config.leaderboard_shadow = newValue)
+                    .build());
+
             return builder.build();
         };
     }

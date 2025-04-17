@@ -2,9 +2,11 @@ package uk.cloudmc.swrc.hud;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
 import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.SWRC;
+import uk.cloudmc.swrc.SWRCConfig;
 
 import java.text.DecimalFormat;
 
@@ -57,7 +59,7 @@ public class BestLap implements Hud {
         // y=\max\left(0,\min\left(p,-\frac{6px}{t^{2}}\left(x-t\right)\left\{0<x<t\right\}\right)\right) :: p = peak :: t = ticks on screen
         int animationHeight = (int) Math.floor(Math.max(0, Math.min(p, -(6 * p * x)/(ON_SCREEN_TIME * ON_SCREEN_TIME) * (x - ON_SCREEN_TIME))));
 
-        graphics.drawTexture(WIDGETS_TEXTURE, scaledWidth / 2 - w / 2, animationHeight - h, u, v, w, h);
+        graphics.drawTexture(RenderLayer::getGuiTextured, WIDGETS_TEXTURE, scaledWidth / 2 - w / 2, animationHeight - h, u, v, w, h, 256, 256);
 
         RenderSystem.disableBlend();
     }
@@ -81,7 +83,7 @@ public class BestLap implements Hud {
     }
 
     public static void renderText(DrawContext graphics, String text, int x, int y, int color) {
-        graphics.drawTextWithShadow(SWRC.instance.textRenderer, text, x, y, color);
+        graphics.drawText(SWRC.instance.textRenderer, text, x, y, color, SWRCConfig.getInstance().leaderboard_shadow);
     }
 
     public static int widthOfText(String text) {

@@ -2,6 +2,7 @@ package uk.cloudmc.swrc.hud;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
 import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.SWRC;
@@ -45,7 +46,7 @@ public class QualiLeaderboard implements Hud {
 
         //renderBox(graphics, WIDGETS_TEXTURE, 0, 0, x, y, 12, body_height, width);
 
-        graphics.drawTexture(WIDGETS_TEXTURE, x + 3, y + 3, 5, 0, 25, 10);
+        graphics.drawTexture(RenderLayer::getGuiTextured, WIDGETS_TEXTURE, x + 3, y + 3, 5, 0, 25, 10, 256, 256);
 
         renderText(graphics, String.format(SWRCConfig.getInstance().header_text, SWRC.getRaceName()), x + 30, y + 4, 0xFFFFFF);
 
@@ -91,14 +92,14 @@ public class QualiLeaderboard implements Hud {
     }
 
     public static void renderText(DrawContext graphics, String text, int x, int y, int color) {
-        graphics.drawTextWithShadow(SWRC.instance.textRenderer, text, x, y, color);
+        graphics.drawText(SWRC.instance.textRenderer, text, x, y, color, SWRCConfig.getInstance().leaderboard_shadow);
     }
 
     public static int widthOfText(String text) {
         return SWRC.instance.textRenderer.getWidth(text);
     }
 
-    public static void renderBox(DrawContext graphics, Identifier texture, int tx, int ty, int x, int y, int hh, int bh, int w) {
+    /*public static void renderBox(DrawContext graphics, Identifier texture, int tx, int ty, int x, int y, int hh, int bh, int w) {
         // Top
         graphics.drawTexture(texture, x, y, tx, ty, 3, 3);
         for (int i = 0; i < w; i++) {
@@ -132,5 +133,5 @@ public class QualiLeaderboard implements Hud {
             graphics.drawTexture(texture, x + fx + 3, y + hh + bh + 4, tx + 3, ty + 6, 1, 3);
         }
         graphics.drawTexture(texture, x + w + 3, y + hh + bh + 4, tx + 4, ty + 6, 1, 3);
-    }
+    }*/
 }

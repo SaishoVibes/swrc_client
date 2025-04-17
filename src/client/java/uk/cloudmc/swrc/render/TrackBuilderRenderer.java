@@ -3,6 +3,8 @@ package uk.cloudmc.swrc.render;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.minecraft.client.gl.ShaderProgram;
+import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Vec3d;
@@ -23,7 +25,7 @@ public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
         RenderSystem.disableCull();
         RenderSystem.disableScissor();
         RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
 
         float prevLineWidth = RenderSystem.getShaderLineWidth();
 
@@ -88,7 +90,7 @@ public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
         RenderSystem.disableCull();
         RenderSystem.disableScissor();
         RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
 
         float prevLineWidth = RenderSystem.getShaderLineWidth();
 
@@ -117,7 +119,7 @@ public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
         RenderSystem.disableCull();
         RenderSystem.disableScissor();
         RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
 
         float prevLineWidth = RenderSystem.getShaderLineWidth();
 

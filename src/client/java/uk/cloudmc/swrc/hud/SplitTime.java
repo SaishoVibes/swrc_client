@@ -2,6 +2,7 @@ package uk.cloudmc.swrc.hud;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
 import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.SWRC;
@@ -70,15 +71,15 @@ public class SplitTime implements Hud {
         x -= combined_length / 2;
 
         for (int ax = 0; ax < widthOfText(time_text) + 2; ax++) {
-            graphics.drawTexture(WIDGETS_TEXTURE, x + ax, y, tx, ty, 1, 10);
+            graphics.drawTexture(RenderLayer::getGuiTextured, WIDGETS_TEXTURE, x + ax, y, tx, ty, 1, 10, 256, 256);
             for (int ay = 0; ay < 10; ay++) {
-                graphics.drawTexture(WIDGETS_TEXTURE, x + ax, y + ay, tx, ty, 1, 1);
+                graphics.drawTexture(RenderLayer::getGuiTextured, WIDGETS_TEXTURE, x + ax, y + ay, tx, ty, 1, 1, 256, 256);
             }
         }
 
 
         for (int bx = 0; bx < widthOfText(split_text) + 2; bx++) {
-            graphics.drawTexture(WIDGETS_TEXTURE, x + bx + widthOfText(time_text) + 2, y, tx + 1, ty, 1, 10);
+            graphics.drawTexture(RenderLayer::getGuiTextured, WIDGETS_TEXTURE, x + bx + widthOfText(time_text) + 2, y, tx + 1, ty, 1, 10, 256, 256);
         }
 
         renderText(graphics, time_text, x + 1, y + 1, 0xFFFFFF);
@@ -103,7 +104,7 @@ public class SplitTime implements Hud {
     }
 
     public static void renderText(DrawContext graphics, String text, int x, int y, int color) {
-        graphics.drawTextWithShadow(SWRC.instance.textRenderer, text, x, y, color);
+        graphics.drawText(SWRC.instance.textRenderer, text, x, y, color, SWRCConfig.getInstance().leaderboard_shadow);
     }
 
     public static int widthOfText(String text) {
