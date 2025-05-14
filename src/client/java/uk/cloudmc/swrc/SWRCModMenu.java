@@ -37,7 +37,7 @@ public class SWRCModMenu implements ModMenuApi {
                     .build());
 
             Category.addEntry(packet.startBooleanToggle(Text.of("Toggle Text Shadow"), config.leaderboard_shadow)
-                    .setDefaultValue(false)
+                    .setDefaultValue(true)
                     .setSaveConsumer(newValue -> config.leaderboard_shadow = newValue)
                     .build());
 
