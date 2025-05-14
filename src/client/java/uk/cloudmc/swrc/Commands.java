@@ -747,7 +747,20 @@ public class Commands {
                             return Command.SINGLE_SUCCESS;
                         }))
                 )
-        );
+        )
+        .then(ClientCommandManager.literal("timer")
+                .then(ClientCommandManager.literal("new")
+                        .then(ClientCommandManager.argument("time", StringArgumentType.string()).executes(context -> {
+                            String time_set = StringArgumentType.getString(context, "time");
+                            if (WebsocketManager.rcSocketAvalible()) {
+                                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Send Request to add %s", time_set)));
+                                return Command.SINGLE_SUCCESS;
+                            }
+
+                            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+                            return 0;})))
+                .then(ClientCommandManager.literal("start"))
+                .then(ClientCommandManager.literal("stop")));
 
     public static final LiteralArgumentBuilder<FabricClientCommandSource> connect = ClientCommandManager.literal("connect")
             .then(ClientCommandManager.argument("server", StringArgumentType.string()).executes(context -> {
