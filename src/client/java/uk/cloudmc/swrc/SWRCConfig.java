@@ -19,6 +19,7 @@ public class SWRCConfig implements ConfigData {
     public String rc_key = "";
     public String header_text = "S2 @ %s";
     public boolean pos_tracking = false;
+    public boolean leaderboard_shadow = true;
 
     public static SWRCConfig getInstance() {
         if (instance == null) {
