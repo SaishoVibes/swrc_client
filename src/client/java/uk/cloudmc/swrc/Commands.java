@@ -29,6 +29,8 @@ import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Commands {
     //region track_builder
@@ -752,8 +754,36 @@ public class Commands {
                 .then(ClientCommandManager.literal("new")
                         .then(ClientCommandManager.argument("time", StringArgumentType.string()).executes(context -> {
                             String time_set = StringArgumentType.getString(context, "time");
+
+                            int hours = 0;
+                            int minutes = 0;
+                            int seconds = 0;
+                            int total_time = 0;
+
+                            Pattern pattern = Pattern.compile("(\\d+)([hms])");
+                            Matcher matcher = pattern.matcher(time_set);
+
+                            while (matcher.find()) {
+                                int value = Integer.parseInt(matcher.group(1));
+                                String unit = matcher.group(2);
+
+                                switch (unit) {
+                                    case "h":
+                                        hours = value;
+                                        break;
+                                    case "m":
+                                        minutes = value;
+                                        break;
+                                    case "s":
+                                        seconds = value;
+                                        break;
+                                }
+                            }
+
+                            total_time = hours * 3600 + minutes * 60 + seconds;
+
                             if (WebsocketManager.rcSocketAvalible()) {
-                                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Send Request to add %s", time_set)));
+                                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Send Request to add %s", total_time)));
                                 return Command.SINGLE_SUCCESS;
                             }
 
