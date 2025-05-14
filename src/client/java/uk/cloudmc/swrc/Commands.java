@@ -757,7 +757,7 @@ public class Commands {
 
                             int total_time = 0;
 
-                            Pattern pattern = Pattern.compile("(\\d+)([hms])");
+                            Pattern pattern = Pattern.compile("(\\d+)([ydhms])");
                             Matcher matcher = pattern.matcher(time_set);
 
                             while (matcher.find()) {
@@ -765,6 +765,12 @@ public class Commands {
                                 String unit = matcher.group(2);
 
                                 switch (unit) {
+                                    case "y":
+                                        total_time += value * 31536000;
+                                        break;
+                                    case "d":
+                                        total_time += value * 86400;
+                                        break;
                                     case "h":
                                         total_time += value * 3600;
                                         break;
