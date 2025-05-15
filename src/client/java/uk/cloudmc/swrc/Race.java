@@ -35,6 +35,8 @@ public class Race {
     private final String id;
     private ArrayList<String> racers = new ArrayList<>();
     private final Track track;
+    private long start_time;
+    private long duration;
 
     public Race(String id, Track track) {
         this.id = id;
@@ -249,5 +251,21 @@ public class Race {
         }
 
         return 0;
+    }
+
+    public long getStartTime() {
+        return start_time;
+    }
+
+    public void setStartTime(long start_time) {
+        this.start_time = start_time;
+    }
+
+    public long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
     }
 }

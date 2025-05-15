@@ -84,6 +84,8 @@ public class RacerWebsocketConnection extends AbstractWebsocketConnection {
                 current_race.setLapBeginTimes(packet.race_lap_begin);
                 current_race.setPits(packet.racer_pits);
                 current_race.setLapCounts(packet.racer_laps);
+                current_race.setStartTime(packet.timer_start);
+                current_race.setDuration(packet.timer_duration);
 
                 if (current_race.flap == null || current_race.flap.hashCode() != packet.flap.hashCode()) ((BestLap) SWRC.bestLap).show();
 

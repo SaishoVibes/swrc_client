@@ -784,6 +784,10 @@ public class Commands {
                             }
 
                             if (WebsocketManager.rcSocketAvalible()) {
+                                C2STimerPacket timerPacket = new C2STimerPacket();
+                                timerPacket.duration = total_time;
+                                timerPacket.start_time = System.currentTimeMillis();
+                                WebsocketManager.rcWebsocketConnection.sendPacket(timerPacket);
                                 context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Send Request to start %s second(s) timer.", total_time)));
                                 return Command.SINGLE_SUCCESS;
                             }
