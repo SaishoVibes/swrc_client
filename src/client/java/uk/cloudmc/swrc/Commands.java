@@ -786,16 +786,36 @@ public class Commands {
                             if (WebsocketManager.rcSocketAvalible()) {
                                 C2STimerPacket timerPacket = new C2STimerPacket();
                                 timerPacket.duration = total_time;
-                                timerPacket.start_time = System.currentTimeMillis();
+                                timerPacket.start_time = -1;
                                 WebsocketManager.rcWebsocketConnection.sendPacket(timerPacket);
-                                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Send Request to start %s second(s) timer.", total_time)));
+                                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Send Request to make %s second(s) timer.", total_time)));
                                 return Command.SINGLE_SUCCESS;
                             }
 
                             context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
                             return 0;})))
-                .then(ClientCommandManager.literal("start"))
-                .then(ClientCommandManager.literal("stop")));
+                .then(ClientCommandManager.literal("start").executes(context -> {
+                    if (WebsocketManager.rcSocketAvalible()) {
+                        C2STimerPacket timerPacket = new C2STimerPacket();
+                        timerPacket.duration = SWRC.getRace().getDuration();
+                        timerPacket.start_time = System.currentTimeMillis();
+                        WebsocketManager.rcWebsocketConnection.sendPacket(timerPacket);
+                        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Send Request to start %s second(s) timer.", timerPacket.duration)));
+                        return Command.SINGLE_SUCCESS;
+                    }
+                    return 0;
+                }))
+                .then(ClientCommandManager.literal("stop").executes(context -> {
+                    if (WebsocketManager.rcSocketAvalible()) {
+                        C2STimerPacket timerPacket = new C2STimerPacket();
+                        timerPacket.duration = -1;
+                        timerPacket.start_time = -1;
+                        WebsocketManager.rcWebsocketConnection.sendPacket(timerPacket);
+                        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Send Request to stop the timer."));
+                        return Command.SINGLE_SUCCESS;
+                    }
+                    return 0;
+                })));
 
     public static final LiteralArgumentBuilder<FabricClientCommandSource> connect = ClientCommandManager.literal("connect")
             .then(ClientCommandManager.argument("server", StringArgumentType.string()).executes(context -> {
