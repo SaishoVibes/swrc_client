@@ -29,6 +29,8 @@ import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Commands {
     //region track_builder
@@ -747,7 +749,73 @@ public class Commands {
                             return Command.SINGLE_SUCCESS;
                         }))
                 )
-        );
+        )
+        .then(ClientCommandManager.literal("timer")
+                .then(ClientCommandManager.literal("new")
+                        .then(ClientCommandManager.argument("time", StringArgumentType.string()).executes(context -> {
+                            String time_set = StringArgumentType.getString(context, "time");
+
+                            int total_time = 0;
+
+                            Pattern pattern = Pattern.compile("(\\d+)([ydhms])");
+                            Matcher matcher = pattern.matcher(time_set);
+
+                            while (matcher.find()) {
+                                int value = Integer.parseInt(matcher.group(1));
+                                String unit = matcher.group(2);
+
+                                switch (unit) {
+                                    case "y":
+                                        total_time += value * 31536000;
+                                        break;
+                                    case "d":
+                                        total_time += value * 86400;
+                                        break;
+                                    case "h":
+                                        total_time += value * 3600;
+                                        break;
+                                    case "m":
+                                        total_time += value * 60;
+                                        break;
+                                    case "s":
+                                        total_time += value;
+                                        break;
+                                }
+                            }
+
+                            if (WebsocketManager.rcSocketAvalible()) {
+                                C2STimerPacket timerPacket = new C2STimerPacket();
+                                timerPacket.duration = total_time;
+                                timerPacket.start_time = -1;
+                                WebsocketManager.rcWebsocketConnection.sendPacket(timerPacket);
+                                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Send Request to make %s second(s) timer.", total_time)));
+                                return Command.SINGLE_SUCCESS;
+                            }
+
+                            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+                            return 0;})))
+                .then(ClientCommandManager.literal("start").executes(context -> {
+                    if (WebsocketManager.rcSocketAvalible()) {
+                        C2STimerPacket timerPacket = new C2STimerPacket();
+                        timerPacket.duration = SWRC.getRace().getDuration();
+                        timerPacket.start_time = System.currentTimeMillis();
+                        WebsocketManager.rcWebsocketConnection.sendPacket(timerPacket);
+                        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Send Request to start %s second(s) timer.", timerPacket.duration)));
+                        return Command.SINGLE_SUCCESS;
+                    }
+                    return 0;
+                }))
+                .then(ClientCommandManager.literal("stop").executes(context -> {
+                    if (WebsocketManager.rcSocketAvalible()) {
+                        C2STimerPacket timerPacket = new C2STimerPacket();
+                        timerPacket.duration = -1;
+                        timerPacket.start_time = -1;
+                        WebsocketManager.rcWebsocketConnection.sendPacket(timerPacket);
+                        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Send Request to stop the timer."));
+                        return Command.SINGLE_SUCCESS;
+                    }
+                    return 0;
+                })));
 
     public static final LiteralArgumentBuilder<FabricClientCommandSource> connect = ClientCommandManager.literal("connect")
             .then(ClientCommandManager.argument("server", StringArgumentType.string()).executes(context -> {
