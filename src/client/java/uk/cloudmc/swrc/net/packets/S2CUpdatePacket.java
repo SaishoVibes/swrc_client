@@ -127,6 +127,10 @@ public class S2CUpdatePacket extends Packet<S2CUpdatePacket> {
     public HashMap<String, Integer> racer_laps;
     @Expose
     public Flap flap;
+    @Expose
+    public long timer_start;
+    @Expose
+    public long timer_duration;
 
     @Override
     public String toString() {
@@ -136,7 +140,9 @@ public class S2CUpdatePacket extends Packet<S2CUpdatePacket> {
                 ", race_lap_begin=" + race_lap_begin +
                 ", racer_pits=" + racer_pits +
                 ", racer_laps=" + racer_laps +
-                ", flap=" + racer_laps +
+                ", flap=" + flap +
+                ", timer_start=" + timer_start +
+                ", timer_duration=" + timer_duration +
                 '}';
     }
 
