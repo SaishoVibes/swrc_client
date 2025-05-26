@@ -46,8 +46,6 @@ public class TimerHud implements Hud {
         long time_remaining = Math.min(Math.max(SWRC.getRace().getDuration() * 1000 - (time_current - SWRC.getRace().getStartTime()), 0), SWRC.getRace().getDuration() * 1000);
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
 
         context.drawText(
                 SWRC.instance.textRenderer,

@@ -39,8 +39,6 @@ public class RaceLeaderboard implements Hud {
         this.scaledHeight = SWRC.instance.getWindow().getScaledHeight();
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
 
         int width = 200;
         int body_height = SWRC.getRace().raceLeaderboardPositions.size() * 9 + 2;
@@ -84,7 +82,6 @@ public class RaceLeaderboard implements Hud {
         if (race.getFlap() != null) {
             renderText(graphics, String.format("%s: %s", race.getFlap().getPlayer_name(), msToTimeString(race.getFlap().getTime())), x + 22, y + 14 + offset * 9 + 4, 0xAFFF14);
         }
-        RenderSystem.disableBlend();
     }
 
     public String msToTimeString(long ms) {

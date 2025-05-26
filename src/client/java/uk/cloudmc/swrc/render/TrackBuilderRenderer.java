@@ -1,10 +1,10 @@
 package uk.cloudmc.swrc.render;
 
+import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.minecraft.client.gl.ShaderProgram;
-import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Vec3d;
@@ -16,16 +16,19 @@ import uk.cloudmc.swrc.track.Checkpoint;
 import uk.cloudmc.swrc.track.Trap;
 
 import java.util.ArrayList;
+import java.util.OptionalDouble;
 
 public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
 
+    private static final RenderLayer renderLayer = RenderLayer.of(
+            "debug_lines",
+            1536,
+            RenderUtils.DEBUG_LINES,
+            RenderLayer.MultiPhaseParameters.builder().lineWidth(new RenderPhase.LineWidth(OptionalDouble.of(1))).build(false)
+    );
+
     public void renderCheckpoint(MatrixStack matrixStack, Camera camera, Vec3d left, Vec3d right, int color) {
         Tessellator tessellator = Tessellator.getInstance();
-
-        RenderSystem.disableCull();
-        RenderSystem.disableScissor();
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
 
         float prevLineWidth = RenderSystem.getShaderLineWidth();
 
@@ -45,7 +48,7 @@ public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
         checkpointLine.vertex(matrix, fLeft.x, fLeft.y, fLeft.z).color(color & 0xFFFFFFFF);
         checkpointLine.vertex(matrix, fRight.x, fRight.y, fRight.z).color(color & 0xFFFFFFFF);
 
-        BufferRenderer.drawWithGlobalProgram(checkpointLine.end());
+        renderLayer.draw(checkpointLine.end());
 
         // Render line on left checkpoint showing detection height
         BufferBuilder leftHeightLine = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
@@ -53,7 +56,7 @@ public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
         leftHeightLine.vertex(matrix, fLeft.x, fLeft.y - 2, fLeft.z).color(color & 0xFFFFFF00);
         leftHeightLine.vertex(matrix, fLeft.x, fLeft.y + 2, fLeft.z).color(color & 0xFFFFFFFF);
 
-        BufferRenderer.drawWithGlobalProgram(leftHeightLine.end());
+        renderLayer.draw(leftHeightLine.end());
 
         // Render line on right checkpoint showing detection height
         BufferBuilder rightHeightLine = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
@@ -61,7 +64,7 @@ public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
         rightHeightLine.vertex(matrix, fRight.x, fRight.y - 2, fRight.z).color(color & 0xFFFFFF00);
         rightHeightLine.vertex(matrix, fRight.x, fRight.y + 2, fRight.z).color(color & 0xFFFFFFFF);
 
-        BufferRenderer.drawWithGlobalProgram(rightHeightLine.end());
+        renderLayer.draw(rightHeightLine.end());
 
         // Render line on left checkpoint showing direction
         BufferBuilder leftDirectionLine = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
@@ -69,7 +72,7 @@ public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
         leftDirectionLine.vertex(matrix, fLeft.x, fLeft.y, fLeft.z).color(color & 0xFFFFFFFF);
         leftDirectionLine.vertex(matrix, fLeft.x + checkpointDirection.x, fLeft.y + checkpointDirection.y, fLeft.z + checkpointDirection.z).color(color & 0xFFFFFFFF);
 
-        BufferRenderer.drawWithGlobalProgram(leftDirectionLine.end());
+        renderLayer.draw(leftDirectionLine.end());
 
         // Render line on right checkpoint showing direction
         BufferBuilder rightDirectionLine = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
@@ -77,20 +80,15 @@ public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
         rightDirectionLine.vertex(matrix, fRight.x, fRight.y, fRight.z).color(color & 0xFFFFFFFF);
         rightDirectionLine.vertex(matrix, fRight.x + checkpointDirection.x, fRight.y + checkpointDirection.y, fRight.z + checkpointDirection.z).color(color & 0xFFFFFFFF);
 
-        BufferRenderer.drawWithGlobalProgram(rightDirectionLine.end());
+        renderLayer.draw(rightDirectionLine.end());
 
-        RenderSystem.enableCull();
-        RenderSystem.disableBlend();
         RenderSystem.lineWidth(prevLineWidth);
     }
 
     public void renderPole(MatrixStack matrixStack, Camera camera, Vec3d pos, int color) {
         Tessellator tessellator = Tessellator.getInstance();
 
-        RenderSystem.disableCull();
         RenderSystem.disableScissor();
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
 
         float prevLineWidth = RenderSystem.getShaderLineWidth();
 
@@ -106,20 +104,15 @@ public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
         line.vertex(matrix, fPos.x, fPos.y - 2, fPos.z).color(color & 0xFFFFFF00);
         line.vertex(matrix, fPos.x, fPos.y + 2, fPos.z).color(color & 0xFFFFFFFF);
 
-        BufferRenderer.drawWithGlobalProgram(line.end());
+        renderLayer.draw(line.end());
 
-        RenderSystem.enableCull();
-        RenderSystem.disableBlend();
         RenderSystem.lineWidth(prevLineWidth);
     }
 
     public void renderLine(MatrixStack matrixStack, Camera camera, Vec3d pos1, Vec3d pos2, int color) {
         Tessellator tessellator = Tessellator.getInstance();
 
-        RenderSystem.disableCull();
         RenderSystem.disableScissor();
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
 
         float prevLineWidth = RenderSystem.getShaderLineWidth();
 
@@ -136,13 +129,8 @@ public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
         line.vertex(matrix, fPos1.x, fPos1.y, fPos1.z).color(color & 0xFFFFFF00);
         line.vertex(matrix, fPos2.x, fPos2.y, fPos2.z).color(color & 0xFFFFFFFF);
 
-        BufferRenderer.drawWithGlobalProgram(line.end());
-
-        RenderSystem.enableCull();
-        RenderSystem.disableBlend();
-        RenderSystem.lineWidth(prevLineWidth);
+        renderLayer.draw(line.end());
     }
-
 
     @Override
     public void beforeDebugRender(WorldRenderContext context) {
