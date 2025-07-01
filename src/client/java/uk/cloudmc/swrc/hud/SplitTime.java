@@ -41,10 +41,6 @@ public class SplitTime implements Hud {
         this.scaledHeight = SWRC.instance.getWindow().getScaledHeight();
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-
-
 
         int x = this.scaledWidth / 2;
         int y = (int) (this.scaledHeight * 0.6);
@@ -85,8 +81,6 @@ public class SplitTime implements Hud {
         renderText(graphics, time_text, x + 1, y + 1, 0xFFFFFF);
         renderText(graphics, split_text, x + widthOfText(time_text) + 3, y + 1, 0xFFFFFF);
         renderText(graphics, split_text, x + widthOfText(time_text) + 3, y + 1, 0xFFFFFF);
-
-        RenderSystem.disableBlend();
     }
 
     public String msToTimeString(long ms) {

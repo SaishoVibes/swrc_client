@@ -3,8 +3,12 @@ package uk.cloudmc.swrc.hud;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.PlayerSkinDrawer;
+import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.realms.util.TextRenderingUtils;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.entity.LivingEntityRenderer;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
 import org.joml.Matrix4f;
 import uk.cloudmc.swrc.Race;
@@ -13,6 +17,7 @@ import uk.cloudmc.swrc.SWRCConfig;
 import uk.cloudmc.swrc.net.packets.S2CUpdatePacket;
 
 import java.text.DecimalFormat;
+import java.util.HashMap;
 
 public class RaceLeaderboard implements Hud {
 
@@ -24,7 +29,13 @@ public class RaceLeaderboard implements Hud {
 
     private static final DecimalFormat decimalFormat = new DecimalFormat("00.000");
 
+    private static final HashMap<String, Double> rowHeight = new HashMap<>();
+
     public RaceLeaderboard() {}
+
+    private double lerp(double a, double b, double t) {
+        return a + (b - a) * t;
+    }
 
     @Override
     public boolean shouldRender() {
@@ -39,8 +50,6 @@ public class RaceLeaderboard implements Hud {
         this.scaledHeight = SWRC.instance.getWindow().getScaledHeight();
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
 
         int width = 200;
         int body_height = SWRC.getRace().raceLeaderboardPositions.size() * 9 + 2;
@@ -61,30 +70,40 @@ public class RaceLeaderboard implements Hud {
             if (offset == 1) pos_color = 0xB2B1BD;
             if (offset == 2) pos_color = 0x805B2B;
 
-            renderText(graphics, String.format("%s", offset + 1), x + 4, y + 14 + offset * 9 + 4, pos_color);
-            renderText(graphics, String.format("%s", position.player_name), x + 22, y + 14 + offset * 9 + 4, race.getFlap() != null && race.getFlap().getPlayer_name().equals(position.player_name) ? 0x9803FC : 0xFFFFFF);
+            double precise_targeted_height = lerp(rowHeight.getOrDefault(position.player_name, (double) offset  * 9), offset  * 9, 0.05);
+            int derived_height = (int) precise_targeted_height;
+
+            PlayerListEntry playerListEntry = SWRC.instance.getNetworkHandler().getPlayerListEntry(position.player_name);
+
+            if (playerListEntry != null) {
+                PlayerSkinDrawer.draw(graphics, playerListEntry.getSkinTextures(), x + 12 + 6, y + 14 + derived_height + 4, 8);
+            }
+
+            renderText(graphics, String.format("%s", offset + 1), x + 4, y + 14 + derived_height + 4, pos_color);
+            renderText(graphics, String.format("%s", position.player_name), x + 22 + 6, y + 14 + derived_height + 4, race.getFlap() != null && race.getFlap().getPlayer_name().equals(position.player_name) ? 0x9803FC : 0xFFFFFF);
 
             if (position.in_pit) {
                 int start_pos = width - widthOfText("IN PIT") - 2;
 
-                renderText(graphics, "IN PIT", x + start_pos, y + 14 + offset * 9 + 4, 0x888888 );
+                renderText(graphics, "IN PIT", x + start_pos + 6, y + 14 + derived_height + 4, 0x888888 );
             } else {
                 int start_pos = width - widthOfText("-" + msToTimeString(position.time_delta)) - 2;
 
-                renderText(graphics, String.format("%s%s", position.time_delta > 0 ? "+" : "" , msToTimeString(position.time_delta)), x + start_pos, y + 14 + offset * 9 + 4, position.time_delta >= 0 ? 0x00FF00 : 0xFF0000 );
+                renderText(graphics, String.format("%s%s", position.time_delta > 0 ? "+" : "" , msToTimeString(position.time_delta)), x + start_pos + 6, y + 14 + derived_height + 4, position.time_delta >= 0 ? 0x00FF00 : 0xFF0000 );
             }
 
             int pits = race.pits.getOrDefault(position.player_name, 0);
 
-            renderText(graphics, String.format("%s", pits), x + width - 57, y + 14 + offset * 9 + 4, 0x00FFFF );
-            renderText(graphics, String.format("%s", race.laps.getOrDefault(position.player_name, 0)), x + width - 70, y + 14 + offset * 9 + 4, 0xFFFF00 );
+            renderText(graphics, String.format("%s", pits), x + width - 57 + 6, y + 14 + derived_height + 4, 0x00FFFF );
+            renderText(graphics, String.format("%s", race.laps.getOrDefault(position.player_name, 0)), x + width - 70 + 6, y + 14 + derived_height + 4, 0xFFFF00 );
+
+            rowHeight.put(position.player_name, precise_targeted_height);
 
             offset += 1;
         }
         if (race.getFlap() != null) {
             renderText(graphics, String.format("%s: %s", race.getFlap().getPlayer_name(), msToTimeString(race.getFlap().getTime())), x + 22, y + 14 + offset * 9 + 4, 0xAFFF14);
         }
-        RenderSystem.disableBlend();
     }
 
     public String msToTimeString(long ms) {

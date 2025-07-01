@@ -19,7 +19,7 @@ public class SWRC implements ClientModInitializer {
 
 	public static Logger LOGGER = LoggerFactory.getLogger("SWRC");
 	public static final String NAMESPACE = "swrc";
-	public static final String VERSION = "2.4.0";
+	public static final String VERSION = "2.5.0";
 
 	public static final MinecraftClient instance = MinecraftClient.getInstance();
 

@@ -36,8 +36,6 @@ public class QualiLeaderboard implements Hud {
         this.scaledHeight = SWRC.instance.getWindow().getScaledHeight();
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
 
         int width = 200;
         int body_height = SWRC.getRace().raceLeaderboardPositions.size() * 9 + 2;
@@ -73,8 +71,6 @@ public class QualiLeaderboard implements Hud {
 
             offset += 1;
         }
-
-        RenderSystem.disableBlend();
     }
 
     public String msToTimeString(long ms) {

@@ -45,8 +45,6 @@ public class BestLap implements Hud {
         this.scaledHeight = SWRC.instance.getWindow().getScaledHeight();
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
 
         int u = 32;
         int v = 0;
@@ -61,7 +59,6 @@ public class BestLap implements Hud {
 
         graphics.drawTexture(RenderLayer::getGuiTextured, WIDGETS_TEXTURE, scaledWidth / 2 - w / 2, animationHeight - h, u, v, w, h, 256, 256);
 
-        RenderSystem.disableBlend();
     }
 
     public void show() {
