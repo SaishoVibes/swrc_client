@@ -33,9 +33,7 @@ public class TrackBuilder {
 
         public boolean canFinalize() {
             if (activeCheckpoint == null) return false;
-            if (!activeCheckpoint.isValid()) return false;
-
-            return true;
+            return activeCheckpoint.isValid();
         }
 
         public void setLeft(Vec3d position) {
@@ -90,9 +88,7 @@ public class TrackBuilder {
 
         public boolean canFinalize() {
             if (activeTrap == null) return false;
-            if (!activeTrap.isValid()) return false;
-
-            return true;
+            return activeTrap.isValid();
         }
 
         public void setEnter(Checkpoint checkpoint) {
@@ -121,8 +117,8 @@ public class TrackBuilder {
 
     public final String id;
 
-    private ArrayList<Checkpoint> checkpoints = new ArrayList<>();
-    private ArrayList<Trap> traps = new ArrayList<>();
+    private final ArrayList<Checkpoint> checkpoints = new ArrayList<>();
+    private final ArrayList<Trap> traps = new ArrayList<>();
     private String name = "Unnamed";
     private long minimumLapTime = 0;
 

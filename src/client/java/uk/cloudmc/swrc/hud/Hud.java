@@ -4,6 +4,6 @@ import net.minecraft.client.gui.DrawContext;
 import uk.cloudmc.swrc.SWRC;
 
 public interface Hud {
-    public boolean shouldRender();
-    public void render(DrawContext context, float tickDelta);
+    boolean shouldRender();
+    void render(DrawContext context, float tickDelta);
 }

@@ -117,7 +117,7 @@ public class RaceLeaderboard implements Hud {
             prefix = String.format("%s:", mins);
         }
 
-        return prefix + this.decimalFormat.format(secconds % 60);
+        return prefix + decimalFormat.format(secconds % 60);
     }
 
     public static void renderText(DrawContext graphics, String text, int x, int y, int color) {

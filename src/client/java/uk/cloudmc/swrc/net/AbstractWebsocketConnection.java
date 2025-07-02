@@ -13,7 +13,7 @@ public abstract class AbstractWebsocketConnection extends WebSocketClient {
         super(uri);
     }
 
-    public void sendPacket(Packet packet) {
+    public void sendPacket(Packet<?> packet) {
         send(packet.serializeForNetwork().array());
     }
 
@@ -21,17 +21,16 @@ public abstract class AbstractWebsocketConnection extends WebSocketClient {
     public void onOpen(ServerHandshake handshakedata) {
         onConnect();
     }
-
     public void onConnect() {}
     public void onDisconnect(int code, String reason, boolean remote) {}
-    public void onPacket(Packet packet) {}
+    public void onPacket(Packet<?> packet) {}
 
     @Override
     public void onMessage(String message) {}
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        if (!remote) SWRC.LOGGER.warn(String.format("Disconnect from WS (%s) %s", code, reason));
+        if (!remote) SWRC.LOGGER.warn("Disconnect from WS ({}) {}", code, reason);
         onDisconnect(code, reason, remote);
     }
 

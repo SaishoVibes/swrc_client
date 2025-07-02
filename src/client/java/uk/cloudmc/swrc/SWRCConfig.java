@@ -16,8 +16,9 @@ public class SWRCConfig implements ConfigData {
 
     private static SWRCConfig instance;
 
-    public String rc_key = "";
-    public String header_text = "S2 @ %s";
+    public String swrc_key = "";
+    public String race_key = "";
+    public String header_text = "S3 @ %s";
     public boolean pos_tracking = false;
     public boolean leaderboard_shadow = true;
 

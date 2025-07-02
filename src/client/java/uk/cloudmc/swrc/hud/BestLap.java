@@ -30,9 +30,7 @@ public class BestLap implements Hud {
     @Override
     public boolean shouldRender() {
         if (SWRC.instance.player == null) return false;
-        if (SWRC.getRace() == null) return false;
-
-        return true;
+        return SWRC.getRace() != null;
     }
 
     @Override

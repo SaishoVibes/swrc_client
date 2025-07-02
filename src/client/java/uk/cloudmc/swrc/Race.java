@@ -1,5 +1,6 @@
 package uk.cloudmc.swrc;
 
+import com.google.gson.annotations.Expose;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import uk.cloudmc.swrc.net.packets.*;
 import uk.cloudmc.swrc.track.Checkpoint;
@@ -32,7 +33,7 @@ public class Race {
 
     private RaceState raceState = RaceState.NONE;
 
-    private final String id;
+    @Expose private final String id;
     private ArrayList<String> racers = new ArrayList<>();
     private final Track track;
     private long start_time;
@@ -244,6 +245,8 @@ public class Race {
     }
 
     public int getSelfBoardPosition() {
+        assert SWRC.instance.player != null;
+
         for (int i = 0; i < this.raceLeaderboardPositions.size(); i++) {
             if (this.raceLeaderboardPositions.get(i).player_name.equals(SWRC.instance.player.getName().getString())) {
                 return i;

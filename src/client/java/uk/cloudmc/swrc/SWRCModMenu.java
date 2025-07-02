@@ -21,9 +21,14 @@ public class SWRCModMenu implements ModMenuApi {
             ConfigCategory Category = builder.getOrCreateCategory(Text.of("Settings"));
             ConfigEntryBuilder packet = builder.entryBuilder();
 
-            Category.addEntry(packet.startStrField(Text.of("RC Key"), config.rc_key)
+            Category.addEntry(packet.startStrField(Text.of("SWRC Key"), config.swrc_key)
                     .setDefaultValue("")
-                    .setSaveConsumer(newValue -> config.rc_key = newValue)
+                    .setSaveConsumer(newValue -> config.swrc_key = newValue)
+                    .build());
+
+            Category.addEntry(packet.startStrField(Text.of("Race Key"), config.race_key)
+                    .setDefaultValue("")
+                    .setSaveConsumer(newValue -> config.race_key = newValue)
                     .build());
 
             Category.addEntry(packet.startStrField(Text.of("Race Header Text"), config.header_text)

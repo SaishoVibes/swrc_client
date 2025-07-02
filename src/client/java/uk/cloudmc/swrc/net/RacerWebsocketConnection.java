@@ -1,6 +1,5 @@
 package uk.cloudmc.swrc.net;
 
-import net.minecraft.client.network.AbstractClientPlayerEntity;
 import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.hud.BestLap;
@@ -8,7 +7,6 @@ import uk.cloudmc.swrc.net.packets.*;
 import uk.cloudmc.swrc.util.ChatFormatter;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 public class RacerWebsocketConnection extends AbstractWebsocketConnection {
@@ -44,21 +42,18 @@ public class RacerWebsocketConnection extends AbstractWebsocketConnection {
                 onPacket(new S2CEndRacePacket().fromBytes(payload));
                 break;
             default:
-                SWRC.LOGGER.info(String.format("Got unknown packet id %s", packetId));
+                SWRC.LOGGER.info("Got unknown packet id {}", packetId);
         }
     }
 
     @Override
-    public void onConnect() {
-
-    }
-
-    @Override
-    public void onPacket(Packet uPacket) {
-        if (uPacket instanceof S2CHelloPacket) {
+    public void onPacket(Packet<?> uPacket) {
+        if (uPacket instanceof S2CHelloPacket packet) {
             SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[Racer] Successfully connected to server."));
 
             C2SHandshakePacket handshake = new C2SHandshakePacket();
+
+            assert SWRC.instance.player != null;
 
             handshake.username = SWRC.instance.player.getName().getString();
             handshake.uuid = SWRC.instance.player.getUuidAsString();
@@ -66,7 +61,8 @@ public class RacerWebsocketConnection extends AbstractWebsocketConnection {
 
             sendPacket(handshake);
         }
-        if (uPacket instanceof S2CHandshakePacket) {
+        if (uPacket instanceof S2CHandshakePacket packet) {
+            SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[Racer] " + packet.motd));
             SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[Racer] Authenticated."));
         }
         if (uPacket instanceof S2CNewRacePacket packet) {

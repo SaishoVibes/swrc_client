@@ -34,7 +34,7 @@ public class TimerHud implements Hud {
             prefix = String.format("%s:", mins);
         }
 
-        return prefix + this.decimalFormat.format(secconds % 60);
+        return prefix + decimalFormat.format(secconds % 60);
     }
 
     @Override
