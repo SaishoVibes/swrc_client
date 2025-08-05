@@ -122,6 +122,8 @@ public class TrackBuilder {
     private String name = "Unnamed";
     private long minimumLapTime = 0;
 
+    private boolean hasTouchedPitCountsAsLap = false;
+
     private boolean pitCountsAsLap = false;
 
     private Checkpoint pit;
@@ -153,6 +155,11 @@ public class TrackBuilder {
 
     public void setPitCountsAsLap(boolean pitCountsAsLap) {
         this.pitCountsAsLap = pitCountsAsLap;
+        this.hasTouchedPitCountsAsLap = true;
+    }
+
+    public boolean hasTouchedPitCountsAsLap() {
+        return hasTouchedPitCountsAsLap;
     }
 
     public boolean getPitCountsAsLap() {

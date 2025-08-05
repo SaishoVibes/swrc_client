@@ -10,6 +10,11 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.command.CommandSource;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
 import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.track.Checkpoint;
@@ -17,9 +22,17 @@ import uk.cloudmc.swrc.track.Track;
 import uk.cloudmc.swrc.track.TrackBuilder;
 import uk.cloudmc.swrc.track.Trap;
 import uk.cloudmc.swrc.util.ChatFormatter;
+import uk.cloudmc.swrc.util.NYTAPI;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.*;
@@ -101,13 +114,34 @@ public class TrackBuilderCommand implements CommandNodeProvider {
                 literal("save")
                 .then(
                     argument("filename", StringArgumentType.string())
-                    .executes(this::doSaveTrack)
+                    .suggests(new RaceCommand.TrackFileSuggestor())
+                    .executes(context -> this.doSaveTrack(context, false))
+                    .then(
+                        argument("wordle", StringArgumentType.string())
+                        .executes(context -> {
+                            String attempt = StringArgumentType.getString(context, "wordle");
+
+                            LocalDateTime dateTime = LocalDateTime.now();
+
+                            String answer = NYTAPI.getWordleAnswer(dateTime.getYear(), dateTime.getMonth().getValue(), dateTime.getDayOfMonth());
+
+                            if (answer != null && answer.equals(attempt)) {
+                                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Correct."));
+                                return this.doSaveTrack(context, true);
+                            }
+
+                            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Incorrect."));
+
+                            return 0;
+                        })
+                    )
                 )
             )
             .then(
                 literal("load")
                 .then(
                     argument("filename", StringArgumentType.string())
+                    .suggests(new RaceCommand.TrackFileSuggestor())
                     .executes(this::doLoadTrack)
                 )
             )
@@ -148,6 +182,9 @@ public class TrackBuilderCommand implements CommandNodeProvider {
                 newTrackBuilder.setName(track.name);
                 newTrackBuilder.setMinimumLapTime(track.minimumLapTime);
 
+                // force it to not give the wordle prompt
+                newTrackBuilder.setPitCountsAsLap(track.pitCountsAsLap);
+
                 track.checkpoints.forEach(newTrackBuilder::addCheckpoint);
                 track.traps.forEach(newTrackBuilder::addTrap);
 
@@ -177,13 +214,43 @@ public class TrackBuilderCommand implements CommandNodeProvider {
         return 0;
     }
 
-    private int doSaveTrack(CommandContext<FabricClientCommandSource> context) {
+    private int doSaveTrack(CommandContext<FabricClientCommandSource> context, boolean force) {
         String target = StringArgumentType.getString(context, "filename");
 
         TrackBuilder trackBuilder = SWRC.getTrackBuilder();
         if (trackBuilder != null) {
             if (trackBuilder.numberOfCheckpoints() > 0) {
                 String filename = target + ".json";
+
+                if (!trackBuilder.hasTouchedPitCountsAsLap() && !force) {
+                    new Thread(() -> {
+                        MutableText mutableText = ChatFormatter.GENERIC_MESSAGE_PREFIX()
+                                .append(Text.literal("You have not explicitly set pit counts as lap.\n").styled(style -> style.withFormatting(Formatting.DARK_RED)))
+                                .append(Text.literal("Please click on today's wordle answer to confirm what you are about to do.\n").styled(style -> style.withFormatting(Formatting.RED)));
+
+                        LocalDateTime date = LocalDateTime.now();
+
+                        for (int i = 0; i < 5; i++) {
+                            LocalDateTime dateTime = date.minusDays(i);
+
+                            String answer = NYTAPI.getWordleAnswer(dateTime.getYear(), dateTime.getMonth().getValue(), dateTime.getDayOfMonth());
+
+                            mutableText = mutableText.append(
+                                    Text.literal(String.format("[%s]\n", answer)).styled(style -> style.withFormatting(Formatting.GOLD)
+                                            .withHoverEvent(new HoverEvent.ShowText(Text.literal("Submit")))
+                                            .withClickEvent(new ClickEvent.RunCommand("/swrc track_builder save " + target + " " + answer))
+                                    )
+                            );
+                        }
+
+                        mutableText = mutableText.append(Text.literal("Please choose wisely").styled(style -> style.withFormatting(Formatting.WHITE)));
+
+                        context.getSource().sendFeedback(
+                                mutableText
+                        );
+                    }).start();
+                    return 0;
+                }
 
                 Track track = trackBuilder.finish();
 
@@ -394,11 +461,11 @@ public class TrackBuilderCommand implements CommandNodeProvider {
     private int doCheckpointRight(CommandContext<FabricClientCommandSource> context) {
         TrackBuilder trackBuilder = SWRC.getTrackBuilder();
 
-        assert SWRC.instance.player != null;
+        assert SWRC.minecraftClient.player != null;
 
         if (trackBuilder != null) {
             if (trackBuilder.checkpointBuilder.hasActiveCheckpoint()) {
-                Vec3d position = SWRC.instance.player.getPos();
+                Vec3d position = SWRC.minecraftClient.player.getPos();
 
                 trackBuilder.checkpointBuilder.setRight(position);
 
@@ -417,11 +484,11 @@ public class TrackBuilderCommand implements CommandNodeProvider {
     private int doCheckpointLeft(CommandContext<FabricClientCommandSource> context) {
         TrackBuilder trackBuilder = SWRC.getTrackBuilder();
 
-        assert SWRC.instance.player != null;
+        assert SWRC.minecraftClient.player != null;
 
         if (trackBuilder != null) {
             if (trackBuilder.checkpointBuilder.hasActiveCheckpoint()) {
-                Vec3d position = SWRC.instance.player.getPos();
+                Vec3d position = SWRC.minecraftClient.player.getPos();
 
                 trackBuilder.checkpointBuilder.setLeft(position);
 

@@ -1,5 +1,6 @@
 package uk.cloudmc.swrc.render;
 
+import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -16,8 +17,10 @@ public class RenderUtils {
                     .withLocation("pipeline/debug_lines")
                     .withVertexFormat(VertexFormats.POSITION_COLOR, VertexFormat.DrawMode.DEBUG_LINES)
                     .withCull(true)
+                    .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
                     .withoutBlend()
-                    .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
                     .build()
+
+
     );
 }

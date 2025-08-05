@@ -18,7 +18,7 @@ import uk.cloudmc.swrc.track.Trap;
 import java.util.ArrayList;
 import java.util.OptionalDouble;
 
-public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
+public class TrackBuilderRenderer implements WorldRenderEvents.Last {
 
     private static final RenderLayer renderLayer = RenderLayer.of(
             "debug_lines",
@@ -133,7 +133,7 @@ public class TrackBuilderRenderer implements WorldRenderEvents.DebugRender {
     }
 
     @Override
-    public void beforeDebugRender(WorldRenderContext context) {
+    public void onLast(WorldRenderContext context) {
         TrackBuilder trackBuilder = SWRC.getTrackBuilder();
         MatrixStack matrixStack = context.matrixStack();
         Camera camera = context.camera();

@@ -12,20 +12,18 @@ public class S2CUpdatePacket extends Packet<S2CUpdatePacket> {
     public static final char packetId = 0x05;
 
     public static class RaceLeaderboardPosition {
-        @Expose
-        public String player_name;
-        @Expose
-        public long time_delta;
-        @Expose
-        public boolean in_pit;
-        @Expose
-        public long flap;
+        @Expose public String player_name;
+        @Expose public long time_delta;
+        @Expose public boolean in_pit;
+        @Expose public long flap;
+        @Expose public long lap_delta;
 
-        public RaceLeaderboardPosition(String player_name, long time_delta, boolean in_pit, long flap) {
+        public RaceLeaderboardPosition(String player_name, long time_delta, boolean in_pit, long flap, long lap_delta) {
             this.player_name = player_name;
             this.time_delta = time_delta;
             this.in_pit = in_pit;
             this.flap = flap;
+            this.lap_delta = lap_delta;
         }
 
         @Override
@@ -35,6 +33,7 @@ public class S2CUpdatePacket extends Packet<S2CUpdatePacket> {
                     ", time_delta=" + time_delta +
                     ", in_pit=" + in_pit +
                     ", flap=" + flap +
+                    ", lap_delta=" + lap_delta +
                     '}';
         }
     }
@@ -76,7 +75,7 @@ public class S2CUpdatePacket extends Packet<S2CUpdatePacket> {
             this.acquired = acquired;
         }
 
-        public String getPlayer_name() {
+        public String getPlayerName() {
             return player_name;
         }
 

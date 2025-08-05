@@ -15,8 +15,7 @@ public class C2SDebugEvalPacket extends Packet<C2SDebugEvalPacket> {
                 '}';
     }
 
-    @Expose
-    public String payload;
+    @Expose public String payload;
 
     @Override
     public char getPacketId() {

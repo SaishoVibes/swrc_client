@@ -11,12 +11,9 @@ public class C2SHandshakePacket extends Packet<C2SHandshakePacket> {
 
     private final Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
 
-    @Expose
-    public String username;
-    @Expose
-    public String uuid;
-    @Expose
-    public String version;
+    @Expose public String username;
+    @Expose public String uuid;
+    @Expose public String version;
 
     @Override
     public String toString() {

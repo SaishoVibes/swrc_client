@@ -1,16 +1,12 @@
 package uk.cloudmc.swrc.net.packets;
 
 import com.google.gson.annotations.Expose;
-import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.track.Track;
 
 import java.nio.charset.StandardCharsets;
 
-public class C2STimerPacket extends Packet<C2STimerPacket> {
-    public static final char packetId = 0x14;
-
-    @Expose public long start_time;
-    @Expose public long duration;
+public class C2SPopFlapPacket extends Packet<C2SPopFlapPacket> {
+    public static final char packetId = 0x15;
 
     @Override
     public char getPacketId() {
@@ -18,8 +14,8 @@ public class C2STimerPacket extends Packet<C2STimerPacket> {
     }
 
     @Override
-    public C2STimerPacket fromBytes(byte[] data) {
-        return Track.gsonSerializer.fromJson(new String(data, StandardCharsets.UTF_8), C2STimerPacket.class);
+    public C2SPopFlapPacket fromBytes(byte[] data) {
+        return Track.gsonSerializer.fromJson(new String(data, StandardCharsets.UTF_8), C2SPopFlapPacket.class);
     }
 
     @Override

@@ -34,6 +34,21 @@ loom {
 		}
 	}
 
+	runs {
+		client1 {
+			environment = "client"
+			configName = "Minecraft Client 1"
+			runDir = "run"
+			client()
+		}
+
+		client2 {
+			environment = "client"
+			configName = "Minecraft Client 2"
+			runDir = "run2"
+			client()
+		}
+	}
 }
 
 dependencies {

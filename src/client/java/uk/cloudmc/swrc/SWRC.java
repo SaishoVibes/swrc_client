@@ -1,44 +1,46 @@
 package uk.cloudmc.swrc;
 
+import jdk.jfr.Event;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudLayerRegistrationCallback;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.IdentifiedLayer;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.cloudmc.swrc.command.RootCommand;
 import uk.cloudmc.swrc.hud.*;
-import uk.cloudmc.swrc.net.packets.S2CSessionsPacket;
 import uk.cloudmc.swrc.render.TrackBuilderRenderer;
 import uk.cloudmc.swrc.track.TrackBuilder;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 public class SWRC implements ClientModInitializer {
 
 	public static Logger LOGGER = LoggerFactory.getLogger("SWRC");
 	public static final String NAMESPACE = "swrc";
-	public static final String VERSION = "3.0.0";
+	public static final String VERSION = FabricLoader.getInstance().getModContainer(NAMESPACE).orElseThrow().getMetadata().getVersion().toString();
 
-	public static final MinecraftClient instance = MinecraftClient.getInstance();
+	public static final MinecraftClient minecraftClient = MinecraftClient.getInstance();
 
 	private static Race race;
 	private static TrackBuilder trackBuilder;
 
 	private static final TrackBuilderRenderer trackBuilderRenderer = new TrackBuilderRenderer();
-	public static final Hud raceLeaderboard = new RaceLeaderboard();
-	public static final Hud qualiLeaderboard = new QualiLeaderboard();
-	public static final Hud splitTime = new SplitTime();
-	public static final Hud bestLap = new BestLap();
-	public static final Hud timerHud = new TimerHud();
+	public static final RaceLeaderboard raceLeaderboard = new RaceLeaderboard();
+	public static final QualiLeaderboard qualiLeaderboard = new QualiLeaderboard();
+	public static final SplitTime splitTime = new SplitTime();
+	public static final BestLap bestLap = new BestLap();
+	public static final TimerHud timerHud = new TimerHud();
+	public static final EventsQueue eventsQueue = new EventsQueue();
+	public static final DisconnectBanner disconnectBanner = new DisconnectBanner();
+	public static final StatusHud statusHud = new StatusHud();
 
 	@Override
 	public void onInitializeClient() {
@@ -70,26 +72,44 @@ public class SWRC implements ClientModInitializer {
 		});
 
 		HudLayerRegistrationCallback.EVENT.register(layeredDrawer -> {
-			layeredDrawer.attachLayerAfter(IdentifiedLayer.DEBUG, Identifier.of(NAMESPACE, "hud"), (drawContext, tickCounter) -> {
-				if (raceLeaderboard.shouldRender()) {
-					raceLeaderboard.render(drawContext, 0.0f);
+
+			layeredDrawer.addLayer(new IdentifiedLayer() {
+				@Override
+				public Identifier id() {
+					return Identifier.of(NAMESPACE, "hud");
 				}
-				if (qualiLeaderboard.shouldRender()) {
-					qualiLeaderboard.render(drawContext, 0.0f);
-				}
-				if (splitTime.shouldRender()) {
-					splitTime.render(drawContext, 0.0f);
-				}
-				if (bestLap.shouldRender()) {
-					bestLap.render(drawContext, 0.0f);
-				}
-				if (timerHud.shouldRender()) {
-					timerHud.render(drawContext, 0.0f);
+
+				@Override
+				public void render(DrawContext context, RenderTickCounter tickCounter) {
+					if (raceLeaderboard.shouldRender()) {
+						raceLeaderboard.render(context, 0.0f);
+					}
+					if (qualiLeaderboard.shouldRender()) {
+						qualiLeaderboard.render(context, 0.0f);
+					}
+					if (splitTime.shouldRender()) {
+						splitTime.render(context, 0.0f);
+					}
+					if (bestLap.shouldRender()) {
+						bestLap.render(context, 0.0f);
+					}
+					if (timerHud.shouldRender()) {
+						timerHud.render(context, 0.0f);
+					}
+					if (eventsQueue.shouldRender()) {
+						eventsQueue.render(context, 0.0f);
+					}
+					if (disconnectBanner.shouldRender()) {
+						disconnectBanner.render(context, 0.0f);
+					}
+					if (statusHud.shouldRender()) {
+						statusHud.render(context, 0.0f);
+					}
 				}
 			});
 		});
 
-		WorldRenderEvents.BEFORE_DEBUG_RENDER.register(trackBuilderRenderer);
+		WorldRenderEvents.LAST.register(trackBuilderRenderer);
 	}
 
 	public static TrackBuilder getTrackBuilder() {

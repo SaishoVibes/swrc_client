@@ -52,7 +52,7 @@ public class RaceTimerCommand implements CommandNodeProvider {
     private int doStartTimer(CommandContext<FabricClientCommandSource> context) {
         if (WebsocketManager.rcSocketAvalible()) {
             C2STimerPacket timerPacket = new C2STimerPacket();
-            timerPacket.duration = SWRC.getRace().getDuration();
+            timerPacket.duration = SWRC.getRace().getTimerDuration();
             timerPacket.start_time = System.currentTimeMillis();
             WebsocketManager.rcWebsocketConnection.sendPacket(timerPacket);
             context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Send Request to start %s second(s) timer.", timerPacket.duration)));

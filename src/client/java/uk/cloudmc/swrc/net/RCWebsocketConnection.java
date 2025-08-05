@@ -1,11 +1,12 @@
 package uk.cloudmc.swrc.net;
 
-import uk.cloudmc.swrc.Race;
+import net.minecraft.text.Text;
 import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.net.packets.*;
 import uk.cloudmc.swrc.util.ChatFormatter;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class RCWebsocketConnection extends AbstractWebsocketConnection {
@@ -14,10 +15,11 @@ public class RCWebsocketConnection extends AbstractWebsocketConnection {
     }
 
     @Override
-    public void onMessage(String message) {
-        byte[] bytes = message.getBytes();
+    public void onMessage(ByteBuffer buffer) {
+        
+        byte[] bytes = buffer.array();
 
-        int packetId = bytes[0];
+        int packetId = bytes[0] & 0xFF;
         byte[] payload = Arrays.copyOfRange(bytes, 1, bytes.length);
 
         switch (packetId) {
@@ -30,33 +32,36 @@ public class RCWebsocketConnection extends AbstractWebsocketConnection {
             case(S2CMessagePacket.packetId):
                 onPacket(new S2CMessagePacket().fromBytes(payload));
                 break;
+            case 0xFF: break;
             default:
-                SWRC.LOGGER.warn("Got unknown packet id {}", packetId);
+                SWRC.LOGGER.info("Got unknown packet id {}", packetId);
+                SWRC.LOGGER.info(Arrays.toString(bytes));
         }
     }
 
     @Override
     public void onPacket(Packet<?> uPacket) {
         if (uPacket instanceof S2CHelloPacket) {
-            SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[RC] Successfully connected to server."));
+            SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[RC] Successfully connected to server."));
 
             C2SHandshakePacket handshake = new C2SHandshakePacket();
 
-            assert SWRC.instance.player != null;
+            assert SWRC.minecraftClient.player != null;
 
-            handshake.username = SWRC.instance.player.getName().getString();
-            handshake.uuid = SWRC.instance.player.getUuidAsString();
+            handshake.username = SWRC.minecraftClient.player.getName().getString();
+            handshake.uuid = SWRC.minecraftClient.player.getUuidAsString();
             handshake.version = SWRC.VERSION;
 
             sendPacket(handshake);
         }
         if (uPacket instanceof S2CHandshakePacket packet) {
-            SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[RC] " + packet.motd));
-            SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[RC] Authenticated as Race Control."));
+            SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[RC] " + packet.motd));
+            SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[RC] Authenticated as Race Control."));
         }
         if (uPacket instanceof S2CMessagePacket packet) {
+            SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE(String.format("[RC] %s", packet.message)));
 
-            SWRC.instance.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE(String.format("[RC] %s", packet.message)));
+            SWRC.eventsQueue.addLine(packet.message);
         }
     }
 }

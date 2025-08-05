@@ -9,6 +9,7 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.fabricmc.loader.api.FabricLoader;
 import uk.cloudmc.swrc.SWRCConfig;
 import uk.cloudmc.swrc.WebsocketManager;
 import uk.cloudmc.swrc.net.packets.C2SCreateNewSessionPacket;
@@ -41,6 +42,22 @@ public class ServerCommand implements CommandNodeProvider {
         }
     }
 
+    private static class ServerSuggestor implements SuggestionProvider<FabricClientCommandSource> {
+        @Override
+        public CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+
+            if (SWRCConfig.getInstance().default_server.toLowerCase().contains(builder.getRemainingLowerCase())) {
+                builder.suggest('"' + SWRCConfig.getInstance().default_server + '"');
+            };
+
+            if ("ws://localhost:7777".toLowerCase().contains(builder.getRemainingLowerCase()) && FabricLoader.getInstance().isDevelopmentEnvironment()) {
+                builder.suggest('"' + "ws://localhost:7777" + '"');
+            };
+
+            return builder.buildFuture();
+        }
+    }
+
     @Override
     public LiteralArgumentBuilder<FabricClientCommandSource> command() {
         return literal("server").
@@ -48,6 +65,7 @@ public class ServerCommand implements CommandNodeProvider {
                 literal("connect")
                 .then(
                     argument("uri", StringArgumentType.string())
+                    .suggests(new ServerSuggestor())
                     .executes(this::doConnect)
                 )
             )

@@ -10,10 +10,10 @@ import java.nio.charset.StandardCharsets;
 public class S2CNewRacePacket extends Packet<S2CNewRacePacket> {
     public static final char packetId = 0x04;
 
-    @Expose
-    public String race_id;
-    @Expose
-    public Track track;
+    @Expose public String race_id;
+    @Expose public Track track;
+    @Expose public int total_laps;
+    @Expose public int total_pits;
 
     @Override
     public String toString() {
