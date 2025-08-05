@@ -1,7 +1,6 @@
 package uk.cloudmc.swrc.net.packets;
 
 import com.google.gson.annotations.Expose;
-import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.track.Track;
 
 import java.nio.charset.StandardCharsets;
