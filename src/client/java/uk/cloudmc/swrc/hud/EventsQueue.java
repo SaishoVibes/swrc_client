@@ -14,7 +14,7 @@ public class EventsQueue implements Hud {
     private int scaledWidth;
     private int scaledHeight;
 
-    private static ConcurrentLinkedDeque<EventEntry> lines = new ConcurrentLinkedDeque<>();
+    private static final ConcurrentLinkedDeque<EventEntry> lines = new ConcurrentLinkedDeque<>();
 
     private static double calculated_height = 0;
 
