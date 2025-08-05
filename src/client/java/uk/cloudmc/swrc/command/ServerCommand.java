@@ -48,11 +48,11 @@ public class ServerCommand implements CommandNodeProvider {
 
             if (SWRCConfig.getInstance().default_server.toLowerCase().contains(builder.getRemainingLowerCase())) {
                 builder.suggest('"' + SWRCConfig.getInstance().default_server + '"');
-            };
+            }
 
             if ("ws://localhost:7777".toLowerCase().contains(builder.getRemainingLowerCase()) && FabricLoader.getInstance().isDevelopmentEnvironment()) {
                 builder.suggest('"' + "ws://localhost:7777" + '"');
-            };
+            }
 
             return builder.buildFuture();
         }
