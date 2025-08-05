@@ -19,7 +19,6 @@ import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.entity.vehicle.ChestBoatEntity;
-import net.minecraft.text.Text;
 import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.WebsocketManager;

@@ -1,6 +1,5 @@
 package uk.cloudmc.swrc.net;
 
-import net.minecraft.text.Text;
 import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.net.packets.*;
 import uk.cloudmc.swrc.util.ChatFormatter;

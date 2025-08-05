@@ -13,7 +13,6 @@ import uk.cloudmc.swrc.net.packets.S2CUpdatePacket;
 import uk.cloudmc.swrc.util.ColorUtil;
 import uk.cloudmc.swrc.util.DeltaFormat;
 
-import java.text.DecimalFormat;
 import java.util.HashMap;
 
 import static net.minecraft.util.math.MathHelper.clamp;
@@ -89,8 +88,6 @@ public class QualiLeaderboard implements Hud {
             renderText(graphics, String.format("%s", position.player_name), x + 28, y + 14 + derived_height + 4, 0xFFFFFF);
 
             int start_pos = width - widthOfText("-" + DeltaFormat.formatDelta(position.time_delta)) + 110;
-
-            long delta = -last_delta + position.time_delta;
 
             if (position.flap == -1) {
                 renderText(graphics, "-", x + start_pos - 30, y + 14 + derived_height + 4, 0xEBCC34 );

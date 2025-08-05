@@ -25,14 +25,8 @@ import uk.cloudmc.swrc.util.ChatFormatter;
 import uk.cloudmc.swrc.util.NYTAPI;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.*;

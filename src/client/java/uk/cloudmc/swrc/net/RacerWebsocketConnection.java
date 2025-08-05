@@ -2,7 +2,6 @@ package uk.cloudmc.swrc.net;
 
 import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.SWRC;
-import uk.cloudmc.swrc.hud.BestLap;
 import uk.cloudmc.swrc.net.packets.*;
 import uk.cloudmc.swrc.util.ChatFormatter;
 

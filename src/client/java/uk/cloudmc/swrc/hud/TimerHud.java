@@ -8,8 +8,6 @@ import uk.cloudmc.swrc.SWRCConfig;
 import uk.cloudmc.swrc.util.DeltaFormat;
 
 public class TimerHud implements Hud {
-    private int scaledWidth;
-    private int scaledHeight;
 
     @Override
     public boolean shouldRender() {
@@ -18,8 +16,8 @@ public class TimerHud implements Hud {
 
     @Override
     public void render(DrawContext context, float tickDelta) {
-        this.scaledWidth = SWRC.minecraftClient.getWindow().getScaledWidth();
-        this.scaledHeight = SWRC.minecraftClient.getWindow().getScaledHeight();
+        int scaledWidth = SWRC.minecraftClient.getWindow().getScaledWidth();
+        int scaledHeight = SWRC.minecraftClient.getWindow().getScaledHeight();
 
         long time_current = System.currentTimeMillis();
         long time_remaining = Math.min(Math.max(SWRC.getRace().getTimerDuration() * 1000 - (time_current - SWRC.getRace().getTimerStart()), 0), SWRC.getRace().getTimerDuration() * 1000);

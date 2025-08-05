@@ -4,7 +4,6 @@ import com.google.gson.annotations.Expose;
 import uk.cloudmc.swrc.track.Track;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 
 public class C2SReorderPacket extends Packet<C2SReorderPacket> {

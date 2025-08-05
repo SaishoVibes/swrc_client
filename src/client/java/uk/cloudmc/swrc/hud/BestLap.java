@@ -23,9 +23,6 @@ public class BestLap implements Hud {
     private String flap_owner = "";
     private long flap = 0;
 
-    private int scaledWidth;
-    private int scaledHeight;
-
     public BestLap() {}
 
     @Override
@@ -40,8 +37,8 @@ public class BestLap implements Hud {
 
         if (race.getFlap() == null) return;
 
-        this.scaledWidth = SWRC.minecraftClient.getWindow().getScaledWidth();
-        this.scaledHeight = SWRC.minecraftClient.getWindow().getScaledHeight();
+        int scaledWidth = SWRC.minecraftClient.getWindow().getScaledWidth();
+        int scaledHeight = SWRC.minecraftClient.getWindow().getScaledHeight();
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 

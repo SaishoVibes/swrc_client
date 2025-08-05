@@ -11,7 +11,7 @@ import java.util.List;
 
 public class StatusHud implements Hud {
 
-    private abstract class StatusChip {
+    private static abstract class StatusChip {
         StatusChip() {
 
         }
@@ -24,9 +24,6 @@ public class StatusHud implements Hud {
             return StatusHud.drawTextWithBackground(context, text, x, y, color, 1);
         }
     }
-
-    private int scaledWidth;
-    private int scaledHeight;
 
     private final List<StatusChip> statuses = List.of(
         new StatusChip() {
@@ -109,8 +106,8 @@ public class StatusHud implements Hud {
 
     @Override
     public void render(DrawContext context, float tickDelta) {
-        this.scaledWidth = SWRC.minecraftClient.getWindow().getScaledWidth();
-        this.scaledHeight = SWRC.minecraftClient.getWindow().getScaledHeight();
+        int scaledWidth = SWRC.minecraftClient.getWindow().getScaledWidth();
+        int scaledHeight = SWRC.minecraftClient.getWindow().getScaledHeight();
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 

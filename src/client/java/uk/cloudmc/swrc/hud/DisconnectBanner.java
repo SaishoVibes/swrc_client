@@ -3,14 +3,8 @@ package uk.cloudmc.swrc.hud;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.SWRC;
-import uk.cloudmc.swrc.SWRCConfig;
-import uk.cloudmc.swrc.net.packets.S2CUpdatePacket;
-import uk.cloudmc.swrc.util.DeltaFormat;
 
 public class DisconnectBanner implements Hud {
 

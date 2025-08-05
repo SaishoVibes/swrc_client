@@ -1,6 +1,5 @@
 package uk.cloudmc.swrc.mixin;
 
-import com.nimbusds.openid.connect.sdk.assurance.evidences.ElectronicSignatureEvidence;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.VertexConsumerProvider;

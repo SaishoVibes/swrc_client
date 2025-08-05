@@ -13,7 +13,6 @@ import uk.cloudmc.swrc.net.packets.S2CUpdatePacket;
 import uk.cloudmc.swrc.util.ColorUtil;
 import uk.cloudmc.swrc.util.DeltaFormat;
 
-import java.text.DecimalFormat;
 import java.util.HashMap;
 
 import static net.minecraft.util.math.MathHelper.clamp;
@@ -21,7 +20,6 @@ import static net.minecraft.util.math.MathHelper.clamp;
 public class RaceLeaderboard implements Hud {
 
     private static final Identifier WIDGETS_TEXTURE = Identifier.of(SWRC.NAMESPACE, "textures/widgets.png");
-    private static final Identifier GREY_TEXTURE = Identifier.of(SWRC.NAMESPACE, "textures/grey.png");
 
     private static final HashMap<String, Double> rowHeight = new HashMap<>();
 

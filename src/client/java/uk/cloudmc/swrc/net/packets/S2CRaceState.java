@@ -5,8 +5,6 @@ import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.track.Track;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
 
 public class S2CRaceState extends Packet<S2CRaceState> {
     public static final char packetId = 0x09;

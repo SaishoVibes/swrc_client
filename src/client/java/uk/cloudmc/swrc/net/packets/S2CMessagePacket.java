@@ -4,7 +4,6 @@ import com.google.gson.annotations.Expose;
 import uk.cloudmc.swrc.track.Track;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 
 public class S2CMessagePacket extends Packet<S2CMessagePacket> {
     public static final char packetId = 0x07;

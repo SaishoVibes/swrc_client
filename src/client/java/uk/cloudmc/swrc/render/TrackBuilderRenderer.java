@@ -1,6 +1,5 @@
 package uk.cloudmc.swrc.render;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
@@ -113,8 +112,6 @@ public class TrackBuilderRenderer implements WorldRenderEvents.Last {
         Tessellator tessellator = Tessellator.getInstance();
 
         RenderSystem.disableScissor();
-
-        float prevLineWidth = RenderSystem.getShaderLineWidth();
 
         RenderSystem.lineWidth(3f);
 
