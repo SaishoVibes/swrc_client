@@ -3,36 +3,32 @@ package uk.cloudmc.swrc.hud;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.SWRCConfig;
-
-import java.text.DecimalFormat;
+import uk.cloudmc.swrc.net.packets.S2CUpdatePacket;
+import uk.cloudmc.swrc.util.DeltaFormat;
 
 public class BestLap implements Hud {
 
     private static final Identifier WIDGETS_TEXTURE = Identifier.of(SWRC.NAMESPACE, "textures/widgets.png");
 
-    private final static double TOP_TARGET_PERCENTAGE = 0.1;
-    private final static double ON_SCREEN_TIME = 2;
+    private final static double TOP_TARGET_PERCENTAGE = 0.15;
+    private final static double ON_SCREEN_TIME = 5;
     private static long begin_time = 0;
 
-    private int scaledWidth;
-    private int scaledHeight;
-
-
-
-    private static final DecimalFormat decimalFormat = new DecimalFormat("00.000");
+    private String flap_owner = "";
+    private long flap = 0;
 
     public BestLap() {}
 
     @Override
     public boolean shouldRender() {
-        if (SWRC.instance.player == null) return false;
-        if (SWRC.getRace() == null) return false;
-
-        return true;
+        if (SWRC.minecraftClient.player == null) return false;
+        return SWRC.getRace() != null;
     }
 
     @Override
@@ -41,12 +37,10 @@ public class BestLap implements Hud {
 
         if (race.getFlap() == null) return;
 
-        this.scaledWidth = SWRC.instance.getWindow().getScaledWidth();
-        this.scaledHeight = SWRC.instance.getWindow().getScaledHeight();
+        int scaledWidth = SWRC.minecraftClient.getWindow().getScaledWidth();
+        int scaledHeight = SWRC.minecraftClient.getWindow().getScaledHeight();
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
 
         int u = 32;
         int v = 0;
@@ -60,33 +54,28 @@ public class BestLap implements Hud {
         int animationHeight = (int) Math.floor(Math.max(0, Math.min(p, -(6 * p * x)/(ON_SCREEN_TIME * ON_SCREEN_TIME) * (x - ON_SCREEN_TIME))));
 
         graphics.drawTexture(RenderLayer::getGuiTextured, WIDGETS_TEXTURE, scaledWidth / 2 - w / 2, animationHeight - h, u, v, w, h, 256, 256);
-
-        RenderSystem.disableBlend();
+        graphics.drawText(
+                SWRC.minecraftClient.textRenderer,
+                Text.literal(flap_owner).styled(style -> style.withFormatting(Formatting.DARK_PURPLE)),
+                scaledWidth / 2 - w / 2 + 103,
+                animationHeight - h + 3,
+                0xFFFFFF,
+                SWRCConfig.getInstance().leaderboard_shadow
+        );
+        graphics.drawText(
+                SWRC.minecraftClient.textRenderer,
+                Text.literal(DeltaFormat.formatMillis(flap)),
+                scaledWidth / 2 - w / 2 + 103,
+                animationHeight - h + 3  + 9,
+                0xFFFFFF,
+                SWRCConfig.getInstance().leaderboard_shadow
+        );
     }
 
-    public void show() {
+    public void show(S2CUpdatePacket.Flap flap) {
+        this.flap_owner = flap.getPlayerName();
+        this.flap = flap.getTime();
+
         begin_time = System.currentTimeMillis();
-    }
-
-    public String msToTimeString(long ms) {
-        double secconds = (double) ms / 1000;
-
-        String prefix = "";
-
-        if (secconds > 60) {
-            int mins = (int) secconds / 60;
-
-            prefix = String.format("%s:", mins);
-        }
-
-        return prefix + decimalFormat.format(secconds % 60);
-    }
-
-    public static void renderText(DrawContext graphics, String text, int x, int y, int color) {
-        graphics.drawText(SWRC.instance.textRenderer, text, x, y, color, SWRCConfig.getInstance().leaderboard_shadow);
-    }
-
-    public static int widthOfText(String text) {
-        return SWRC.instance.textRenderer.getWidth(text);
     }
 }

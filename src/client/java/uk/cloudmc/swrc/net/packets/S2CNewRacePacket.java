@@ -1,7 +1,5 @@
 package uk.cloudmc.swrc.net.packets;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 import uk.cloudmc.swrc.track.Track;
 
@@ -10,10 +8,10 @@ import java.nio.charset.StandardCharsets;
 public class S2CNewRacePacket extends Packet<S2CNewRacePacket> {
     public static final char packetId = 0x04;
 
-    @Expose
-    public String race_id;
-    @Expose
-    public Track track;
+    @Expose public String race_id;
+    @Expose public Track track;
+    @Expose public int total_laps;
+    @Expose public int total_pits;
 
     @Override
     public String toString() {

@@ -11,6 +11,8 @@ public class S2CHelloPacket extends Packet<S2CHelloPacket> {
 
     private final Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
 
+    @Expose public String server_label;
+
     @Override
     public String toString() {
         return "S2CHelloPacket{" +

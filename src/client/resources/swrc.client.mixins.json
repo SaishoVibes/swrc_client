@@ -3,6 +3,8 @@
 	"package": "uk.cloudmc.swrc.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"client": [
+		"EntityRendererAccessor",
+		"LivingEntityRenderMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

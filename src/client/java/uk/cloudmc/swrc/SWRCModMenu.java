@@ -21,9 +21,14 @@ public class SWRCModMenu implements ModMenuApi {
             ConfigCategory Category = builder.getOrCreateCategory(Text.of("Settings"));
             ConfigEntryBuilder packet = builder.entryBuilder();
 
-            Category.addEntry(packet.startStrField(Text.of("RC Key"), config.rc_key)
+            Category.addEntry(packet.startStrField(Text.of("SWRC Key"), config.swrc_key)
                     .setDefaultValue("")
-                    .setSaveConsumer(newValue -> config.rc_key = newValue)
+                    .setSaveConsumer(newValue -> config.swrc_key = newValue)
+                    .build());
+
+            Category.addEntry(packet.startStrField(Text.of("Race Key"), config.race_key)
+                    .setDefaultValue("")
+                    .setSaveConsumer(newValue -> config.race_key = newValue)
                     .build());
 
             Category.addEntry(packet.startStrField(Text.of("Race Header Text"), config.header_text)
@@ -32,13 +37,23 @@ public class SWRCModMenu implements ModMenuApi {
                     .build());
 
             Category.addEntry(packet.startBooleanToggle(Text.of("Toggle Position Tracking"), config.pos_tracking)
-                    .setDefaultValue(false)
+                    .setDefaultValue(true)
                     .setSaveConsumer(newValue -> config.pos_tracking = newValue)
                     .build());
 
             Category.addEntry(packet.startBooleanToggle(Text.of("Toggle Text Shadow"), config.leaderboard_shadow)
                     .setDefaultValue(true)
                     .setSaveConsumer(newValue -> config.leaderboard_shadow = newValue)
+                    .build());
+
+            Category.addEntry(packet.startBooleanToggle(Text.of("Render split times above player heads"), config.renderLapTimesAboveHeads)
+                    .setDefaultValue(true)
+                    .setSaveConsumer(newValue -> config.renderLapTimesAboveHeads = newValue)
+                    .build());
+
+            Category.addEntry(packet.startTextField(Text.of("Default Server"), config.default_server)
+                    .setDefaultValue("wss://swrc.cloudmc.uk/realtime/")
+                    .setSaveConsumer(newValue -> config.default_server = newValue)
                     .build());
 
             return builder.build();

@@ -16,10 +16,14 @@ public class SWRCConfig implements ConfigData {
 
     private static SWRCConfig instance;
 
-    public String rc_key = "";
-    public String header_text = "S2 @ %s";
-    public boolean pos_tracking = false;
+    public String swrc_key = "";
+    public String race_key = "";
+    public String header_text = "S3 @ %s";
+    public boolean pos_tracking = true;
     public boolean leaderboard_shadow = true;
+    public boolean renderLapTimesAboveHeads = true;
+
+    public String default_server = "wss://swrc.cloudmc.uk/realtime/";
 
     public static SWRCConfig getInstance() {
         if (instance == null) {
