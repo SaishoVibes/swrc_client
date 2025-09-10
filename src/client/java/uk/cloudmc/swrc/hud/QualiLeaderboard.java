@@ -1,6 +1,7 @@
 package uk.cloudmc.swrc.hud;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.PlayerSkinDrawer;
 import net.minecraft.client.network.PlayerListEntry;
@@ -38,7 +39,7 @@ public class QualiLeaderboard implements Hud {
     public void render(DrawContext graphics, float tickDelta) {
         Race race = SWRC.getRace();
 
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        //RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
         int width = 50;
         int body_height = SWRC.getRace().raceLeaderboardPositions.size() * 9 + 2;
@@ -53,7 +54,7 @@ public class QualiLeaderboard implements Hud {
 
         //renderBox(graphics, WIDGETS_TEXTURE, 0, 0, x, y, 12, body_height, width);
 
-        graphics.drawTexture(RenderLayer::getGuiTextured, WIDGETS_TEXTURE, x + 3, y + 3, 5, 0, 25, 10, 256, 256);
+        graphics.drawTexture(RenderPipelines.GUI_TEXTURED, WIDGETS_TEXTURE, x + 3, y + 3, 5, 0, 25, 10, 256, 256);
 
         String header = String.format(SWRCConfig.getInstance().header_text, SWRC.getRaceName());
 

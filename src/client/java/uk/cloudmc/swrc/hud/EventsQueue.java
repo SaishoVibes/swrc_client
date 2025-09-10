@@ -39,7 +39,7 @@ public class EventsQueue implements Hud {
         this.scaledWidth = SWRC.minecraftClient.getWindow().getScaledWidth();
         this.scaledHeight = SWRC.minecraftClient.getWindow().getScaledHeight();
 
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        //RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
         calculated_height = lerp(calculated_height, lines.size() * 9, 0.05);
 
