@@ -48,7 +48,7 @@ public class EventsQueue implements Hud {
         for (Iterator<EventEntry> it = lines.descendingIterator(); it.hasNext(); ) {
             EventEntry entry = it.next();
 
-            context.drawTextWithShadow(SWRC.minecraftClient.textRenderer, entry.line, scaledWidth - widthOfText(entry.line) - 10, h, 0xFFFFFF);
+            context.drawTextWithShadow(SWRC.minecraftClient.textRenderer, entry.line, scaledWidth - widthOfText(entry.line) - 10, h, 0xFFFFFFFF);
 
             h += 9;
         }

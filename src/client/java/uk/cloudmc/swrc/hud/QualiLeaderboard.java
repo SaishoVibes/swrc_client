@@ -99,7 +99,7 @@ public class QualiLeaderboard implements Hud {
                             "INTERVAL",
                             x + start_pos + 26,
                             y + 14 + derived_height + 4,
-                            0xCCCCCC
+                            0xFFCCCCCC
                     );
                 } else {
                     renderText(
