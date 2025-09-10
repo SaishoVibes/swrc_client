@@ -82,6 +82,10 @@ public class SplitTime implements Hud {
 
         x -= combined_length / 2;
 
+        renderText(graphics, time_text, x + 1, y + 1, 0xFFFFFFFF);
+        renderText(graphics, split_text, x + widthOfText(time_text) + 3, y + 1, 0xFFFFFFFF);
+        renderText(graphics, split_text, x + widthOfText(time_text) + 3, y + 1, 0xFFFFFFFF);
+
         for (int ax = 0; ax < widthOfText(time_text) + 2; ax++) {
             graphics.drawTexture(RenderPipelines.GUI_TEXTURED, WIDGETS_TEXTURE, x + ax, y, tx, ty, 1, 10, 256, 256);
             for (int ay = 0; ay < 10; ay++) {
@@ -94,9 +98,9 @@ public class SplitTime implements Hud {
             graphics.drawTexture(RenderPipelines.GUI_TEXTURED, WIDGETS_TEXTURE, x + bx + widthOfText(time_text) + 2, y, tx + 1, ty, 1, 10, 256, 256);
         }
 
-        renderText(graphics, time_text, x + 1, y + 1, 0xFFFFFF);
+        /*renderText(graphics, time_text, x + 1, y + 1, 0xFFFFFF);
         renderText(graphics, split_text, x + widthOfText(time_text) + 3, y + 1, 0xFFFFFF);
-        renderText(graphics, split_text, x + widthOfText(time_text) + 3, y + 1, 0xFFFFFF);
+        renderText(graphics, split_text, x + widthOfText(time_text) + 3, y + 1, 0xFFFFFF);*/
     }
 
     public static void renderText(DrawContext graphics, String text, int x, int y, int color) {

@@ -137,8 +137,9 @@ public class StatusHud implements Hud {
         int text_width = SWRC.minecraftClient.textRenderer.getWidth(text);
         int total_width = text_width + padding * 2;
 
+        context.drawText(SWRC.minecraftClient.textRenderer, text, x + padding, y + padding, 0xFFFFFFFF, true);
         context.fill(x, y, x + total_width, y + 10, color);
-        context.drawText(SWRC.minecraftClient.textRenderer, text, x + padding, y + padding, 0xFFFFFF, true);
+        //context.drawText(SWRC.minecraftClient.textRenderer, text, x + padding, y + padding, 0xFFFFFF, true);
 
         return total_width;
     }
