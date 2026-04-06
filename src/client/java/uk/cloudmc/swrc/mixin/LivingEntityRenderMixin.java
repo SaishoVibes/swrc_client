@@ -3,10 +3,12 @@ package uk.cloudmc.swrc.mixin;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
+import net.minecraft.client.render.state.CameraRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.scoreboard.ScoreboardDisplaySlot;
@@ -34,12 +36,12 @@ public abstract class LivingEntityRenderMixin<T extends LivingEntity, S extends 
     protected abstract boolean hasLabel(T entity, double distanceSquared);
 
     @Inject(
-            method = "render(Lnet/minecraft/client/render/entity/state/LivingEntityRenderState;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
+            method = "render(Lnet/minecraft/client/render/entity/state/LivingEntityRenderState;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;Lnet/minecraft/client/render/state/CameraRenderState;)V",
             at = @At("TAIL")
     )
     @SuppressWarnings("ConstantValue")
-    private void renderLapTimeLabel(S renderState, MatrixStack matrices, VertexConsumerProvider vertices, int light, CallbackInfo ci) {
-        if (!(renderState instanceof PlayerEntityRenderState playerState)) return;
+    private void renderLapTimeLabel(S livingEntityRenderState, MatrixStack matrixStack, OrderedRenderCommandQueue orderedRenderCommandQueue, CameraRenderState cameraRenderState, CallbackInfo ci) {
+        if (!(livingEntityRenderState instanceof PlayerEntityRenderState playerState)) return;
         if (!(((Object) this) instanceof PlayerEntityRenderer renderer)) return;
         if (!SWRCConfig.getInstance().renderLapTimesAboveHeads) return;
         if (SWRC.minecraftClient.world == null || SWRC.getRace() == null) return;
@@ -47,7 +49,7 @@ public abstract class LivingEntityRenderMixin<T extends LivingEntity, S extends 
         Race race = SWRC.getRace();
 
         AbstractClientPlayerEntity player = SWRC.minecraftClient.world.getPlayers().stream()
-                .filter(p -> p.getName().getLiteralString().equals(playerState.name))
+                .filter(p -> p.getName().getLiteralString().equals(playerState.playerName))
                 .findFirst()
                 .orElse(null);
 
@@ -60,24 +62,24 @@ public abstract class LivingEntityRenderMixin<T extends LivingEntity, S extends 
 
         if (leaderboardPos == null) return;
 
-        matrices.push();
-        matrices.translate(0, playerState.height + 0.5f, 0);
+        matrixStack.push();
+        matrixStack.translate(0, playerState.height + 0.5f, 0);
 
         boolean showLabel = hasLabel((T) player, playerState.squaredDistanceToCamera);
         boolean isClose = playerState.squaredDistanceToCamera < 100.0;
-        boolean hasBelowNameObjective = player.getScoreboard().getObjectiveForSlot(ScoreboardDisplaySlot.BELOW_NAME) != null;
+        boolean hasBelowNameObjective = (ScoreboardDisplaySlot.BELOW_NAME) != null;
 
         if (showLabel && playerState.squaredDistanceToCamera <= 4096.0) {
-            matrices.translate(0.0, 9.0f * 1.15f * 0.025f, 0.0);
+            matrixStack.translate(0.0, 9.0f * 1.15f * 0.025f, 0.0);
             if (isClose && hasBelowNameObjective) {
-                matrices.translate(0.0, 9.0f * 1.15f * 0.025f, 0.0);
+                matrixStack.translate(0.0, 9.0f * 1.15f * 0.025f, 0.0);
             }
         }
 
-        matrices.multiply(((EntityRendererAccessor) renderer).getDispatcher().getRotation());
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotation((float) Math.PI));
-        matrices.scale(-1.0f, 1.0f, 1.0f);
-        matrices.scale(0.025f, 0.025f, 0.025f);
+        matrixStack.multiply(((EntityRendererAccessor) renderer).getDispatcher().camera.getRotation());
+        matrixStack.multiply(RotationAxis.POSITIVE_Z.rotation((float) Math.PI));
+        matrixStack.scale(-1.0f, 1.0f, 1.0f);
+        matrixStack.scale(0.025f, 0.025f, 0.025f);
 
         String playerName = player.getName().getString();
         long lapTime = System.currentTimeMillis() - race.getLapBeginTime(playerName);
@@ -108,19 +110,31 @@ public abstract class LivingEntityRenderMixin<T extends LivingEntity, S extends 
 
         TextRenderer textRenderer = SWRC.minecraftClient.textRenderer;
 
-        textRenderer.draw(
-                text,
-                -textRenderer.getWidth(text.getString()) / 2.0f,
-                0.0f,
-                0xffffffff,
-                true,
-                matrices.peek().getPositionMatrix(),
-                vertices,
-                TextRenderer.TextLayerType.NORMAL,
-                0x77777777,
-                0xffffff
+//        textRenderer.draw(
+//                text,
+//                -textRenderer.getWidth(text.getString()) / 2.0f,
+//                0.0f,
+//                0xffffffff,
+//                true,
+//                matrixStack.peek().getPositionMatrix(),
+//                vertices,
+//                TextRenderer.TextLayerType.NORMAL,
+//                0x77777777,
+//                0xffffff
+//        );
+        orderedRenderCommandQueue.submitText(
+                matrixStack,                                        // MatrixStack (not the matrix itself)
+                -textRenderer.getWidth(text) / 2.0f,               // x: centered
+                0.0f,                                               // y
+                text.asOrderedText(),                               // must be OrderedText now
+                true,                                               // drop shadow
+                TextRenderer.TextLayerType.NORMAL,                  // layer type
+                0xffffff,                                           // light
+                0xffffffff,                                         // color: white
+                0x77777777,                                         // background color
+                0x00000000                                          // outline color (0 = none)
         );
 
-        matrices.pop();
+        matrixStack.pop();
     }
 }
