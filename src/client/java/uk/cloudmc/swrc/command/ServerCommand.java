@@ -13,6 +13,8 @@ import net.fabricmc.loader.api.FabricLoader;
 import uk.cloudmc.swrc.SWRCConfig;
 import uk.cloudmc.swrc.WebsocketManager;
 import uk.cloudmc.swrc.net.packets.C2SCreateNewSessionPacket;
+import uk.cloudmc.swrc.net.packets.C2SEndSessionPacket;
+import uk.cloudmc.swrc.net.packets.C2SNameSessionPacket;
 import uk.cloudmc.swrc.net.packets.S2CSessionsPacket;
 import uk.cloudmc.swrc.util.ChatFormatter;
 
@@ -83,6 +85,13 @@ public class ServerCommand implements CommandNodeProvider {
                         .executes(this::doConnectSession)
                     )
                     .then(
+                        literal("status")
+                            .then(
+                                argument("status_text", StringArgumentType.greedyString())
+                                .executes(this::doSetSessionStatus)
+                        )
+                    )
+                    .then(
                         literal("destroy")
                         .executes(this::doDestroySession)
                     )
@@ -93,7 +102,57 @@ public class ServerCommand implements CommandNodeProvider {
             );
     }
 
+    private int doSetSessionStatus(CommandContext<FabricClientCommandSource> context) {
+        String session = StringArgumentType.getString(context, "session");
+        String status_text = StringArgumentType.getString(context, "status_text");
+
+        if (WebsocketManager.swrcSocketAvalible()) {
+
+            if (!WebsocketManager.swrcWebsocketConnection.sessions.containsKey(session)) {
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Invalid session"));
+                context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", ""));
+                return 0;
+            }
+
+            C2SNameSessionPacket packet = new C2SNameSessionPacket();
+            packet.name = status_text;
+            packet.key = SWRCConfig.getInstance().swrc_key;
+            packet.session = session;
+
+            WebsocketManager.swrcWebsocketConnection.sendPacket(packet);
+
+            return Command.SINGLE_SUCCESS;
+        }
+
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: SWRC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc", "to connect to the default server"));
+        return 0;
+    }
+
     private int doDestroySession(CommandContext<FabricClientCommandSource> context) {
+        String session = StringArgumentType.getString(context, "session");
+
+        if (WebsocketManager.swrcSocketAvalible()) {
+
+            if (!WebsocketManager.swrcWebsocketConnection.sessions.containsKey(session)) {
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Invalid session"));
+                context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", ""));
+                return 0;
+            }
+
+            C2SEndSessionPacket packet = new C2SEndSessionPacket();
+
+            packet.session = session;
+            packet.key = SWRCConfig.getInstance().swrc_key;
+
+            WebsocketManager.swrcWebsocketConnection.sendPacket(packet);
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Destroying Session."));
+
+            return Command.SINGLE_SUCCESS;
+        }
+
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: SWRC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc", "to connect to the default server"));
         return 0;
     }
 
@@ -104,7 +163,8 @@ public class ServerCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Not connected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: SWRC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc", "to connect to the default server"));
         return 0;
     }
 
@@ -115,6 +175,7 @@ public class ServerCommand implements CommandNodeProvider {
 
             if (!WebsocketManager.swrcWebsocketConnection.sessions.containsKey(session)) {
                 context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Invalid session"));
+                context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", ""));
                 return 0;
             }
 
@@ -123,7 +184,8 @@ public class ServerCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Not connected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: SWRC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc", "to connect to the default server"));
         return 0;
     }
 
@@ -138,7 +200,8 @@ public class ServerCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Not connected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: SWRC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc", "to connect to the default server"));
         return 0;
     }
 
@@ -146,7 +209,8 @@ public class ServerCommand implements CommandNodeProvider {
         String server = StringArgumentType.getString(context, "uri");
 
         if (server.contains("http://") || server.contains("https://")) {
-            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Saisho please no"));
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Unsupported Protocol"));
+            context.getSource().sendFeedback(ChatFormatter.HINT("use ws:// or wss://"));
             return 0;
         }
 

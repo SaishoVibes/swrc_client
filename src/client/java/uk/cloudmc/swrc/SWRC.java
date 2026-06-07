@@ -16,12 +16,27 @@ import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.cloudmc.swrc.command.RaceCommand;
 import uk.cloudmc.swrc.command.RootCommand;
 import uk.cloudmc.swrc.hud.*;
 import uk.cloudmc.swrc.render.TrackBuilderRenderer;
 import uk.cloudmc.swrc.track.TrackBuilder;
+import uk.cloudmc.swrc.tt.TimeTrial;
+import uk.cloudmc.swrc.util.NTPTimeSync;
+
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.SimpleResourceReloadListener;
+import net.fabricmc.fabric.impl.resource.loader.ResourceManagerHelperImpl;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.ResourceType;
 
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 public class SWRC implements ClientModInitializer {
 
@@ -32,9 +47,10 @@ public class SWRC implements ClientModInitializer {
 	public static final MinecraftClient minecraftClient = MinecraftClient.getInstance();
 
 	private static Race race;
+	private static TimeTrial timeTrial;
 	private static TrackBuilder trackBuilder;
 
-	private static final TrackBuilderRenderer trackBuilderRenderer = new TrackBuilderRenderer();
+	public static final TrackBuilderRenderer trackBuilderRenderer = new TrackBuilderRenderer();
 	public static final RaceLeaderboard raceLeaderboard = new RaceLeaderboard();
 	public static final QualiLeaderboard qualiLeaderboard = new QualiLeaderboard();
 	public static final SplitTime splitTime = new SplitTime();
@@ -46,6 +62,14 @@ public class SWRC implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+
+		try {
+			NTPTimeSync.attemptTimeSync();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
 		File config_folder = FabricLoader.getInstance().getConfigDir().resolve(NAMESPACE).toFile();
 		if (!config_folder.exists()) {
             boolean _ignore = config_folder.mkdir();
@@ -62,46 +86,53 @@ public class SWRC implements ClientModInitializer {
 		}
 
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
-			dispatcher.register(new RootCommand().command());
+			RootCommand rootCommand = new RootCommand();
+			dispatcher.register(rootCommand.command());
+			dispatcher.register(rootCommand.raceCommand.command());
+			dispatcher.register(rootCommand.trackBuilderCommand.command());
+		});
+
+		ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleResourceReloadListener<>() {
+
+			@Override
+			public Identifier getFabricId() {
+				return Identifier.of(NAMESPACE, "resource_reload");
+			}
+
+			@Override
+			public CompletableFuture<Object> load(ResourceManager resourceManager, Executor executor) {
+				return CompletableFuture.completedFuture(null);
+			}
+
+			@Override
+			public CompletableFuture<Void> apply(Object o, ResourceManager resourceManager, Executor executor) {
+				return CompletableFuture.runAsync(SplitTime::initColors, executor);
+			}
+		});
+
+		ClientLifecycleEvents.CLIENT_STARTED.register(minecraftClient -> {
+			SplitTime.initColors();
 		});
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
 			if (client.world == null) return;
+			if (timeTrial != null) {
+				timeTrial.update();
+			}
 			if (race == null) return;
 			if (!WebsocketManager.rcSocketAvalible()) return;
 
 			race.update();
 		});
 
-		HudElementRegistry.addFirst(
-				Identifier.of(NAMESPACE, "hud"),
-				(context, tickCounter) -> {
-					if (raceLeaderboard.shouldRender()) {
-						raceLeaderboard.render(context, 0.0f);
-					}
-					if (qualiLeaderboard.shouldRender()) {
-						qualiLeaderboard.render(context, 0.0f);
-					}
-					if (splitTime.shouldRender()) {
-						splitTime.render(context, 0.0f);
-					}
-					if (bestLap.shouldRender()) {
-						bestLap.render(context, 0.0f);
-					}
-					if (timerHud.shouldRender()) {
-						timerHud.render(context, 0.0f);
-					}
-					if (eventsQueue.shouldRender()) {
-						eventsQueue.render(context, 0.0f);
-					}
-					if (disconnectBanner.shouldRender()) {
-						disconnectBanner.render(context, 0.0f);
-					}
-					if (statusHud.shouldRender()) {
-						statusHud.render(context, 0.0f);
-					}
-				}
-		);
+		HudElementRegistry.addFirst(Identifier.of(NAMESPACE, "hud_disconnect_banner"), disconnectBanner);
+		HudElementRegistry.addFirst(Identifier.of(NAMESPACE, "hud_events_queue"), eventsQueue);
+		HudElementRegistry.addFirst(Identifier.of(NAMESPACE, "hud_timer"), timerHud);
+		HudElementRegistry.addFirst(Identifier.of(NAMESPACE, "hud_quali_leaderboard"), qualiLeaderboard);
+		HudElementRegistry.addFirst(Identifier.of(NAMESPACE, "hud_race_leaderboard"), raceLeaderboard);
+		HudElementRegistry.addFirst(Identifier.of(NAMESPACE, "hud_split_time"), splitTime);
+		HudElementRegistry.addFirst(Identifier.of(NAMESPACE, "hud_status"), statusHud);
+		HudElementRegistry.addFirst(Identifier.of(NAMESPACE, "hud_best_lap"), bestLap);
 
 		WorldRenderEvents.END_MAIN.register(context -> {
 			trackBuilderRenderer.onRender(
@@ -130,5 +161,13 @@ public class SWRC implements ClientModInitializer {
 
 	public static String getRaceName() {
 		return race.getTrackName();
+	}
+
+	public static TimeTrial getTimeTrial() {
+		return timeTrial;
+	}
+
+	public static void setTimeTrial(TimeTrial timeTrial) {
+		SWRC.timeTrial = timeTrial;
 	}
 }

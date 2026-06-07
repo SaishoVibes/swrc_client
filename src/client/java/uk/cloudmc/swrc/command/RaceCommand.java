@@ -278,7 +278,7 @@ RaceCommand implements CommandNodeProvider {
                     )
                 )
             )
-            .then(new RaceTimerCommand().command());
+            .then(new RaceCountdownTimerCommand().command());
     }
 
     private int doSendToBack(CommandContext<FabricClientCommandSource> context) {
