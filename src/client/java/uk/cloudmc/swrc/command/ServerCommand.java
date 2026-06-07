@@ -63,43 +63,43 @@ public class ServerCommand implements CommandNodeProvider {
     @Override
     public LiteralArgumentBuilder<FabricClientCommandSource> command() {
         return literal("server").
-            then(
-                literal("connect")
-                .then(
-                    argument("uri", StringArgumentType.string())
-                    .suggests(new ServerSuggestor())
-                    .executes(this::doConnect)
-                )
-            )
-            .then(
-                literal("sessions")
-                .then(
-                        literal("create")
-                        .executes(this::doCreateSession)
-                )
-                .then(
-                    argument("session", StringArgumentType.string())
-                    .suggests(new SessionSuggester())
-                    .then(
+                then(
                         literal("connect")
-                        .executes(this::doConnectSession)
-                    )
-                    .then(
-                        literal("status")
-                            .then(
-                                argument("status_text", StringArgumentType.greedyString())
-                                .executes(this::doSetSessionStatus)
-                        )
-                    )
-                    .then(
-                        literal("destroy")
-                        .executes(this::doDestroySession)
-                    )
+                                .then(
+                                        argument("uri", StringArgumentType.string())
+                                                .suggests(new ServerSuggestor())
+                                                .executes(this::doConnect)
+                                )
                 )
-                .executes(
-                        this::showSessions
-                )
-            );
+                .then(
+                        literal("sessions")
+                                .then(
+                                        literal("create")
+                                                .executes(this::doCreateSession)
+                                )
+                                .then(
+                                        argument("session", StringArgumentType.string())
+                                                .suggests(new SessionSuggester())
+                                                .then(
+                                                        literal("connect")
+                                                                .executes(this::doConnectSession)
+                                                )
+                                                .then(
+                                                        literal("status")
+                                                                .then(
+                                                                        argument("status_text", StringArgumentType.greedyString())
+                                                                                .executes(this::doSetSessionStatus)
+                                                                )
+                                                )
+                                                .then(
+                                                        literal("destroy")
+                                                                .executes(this::doDestroySession)
+                                                )
+                                )
+                                .executes(
+                                        this::showSessions
+                                )
+                );
     }
 
     private int doSetSessionStatus(CommandContext<FabricClientCommandSource> context) {

@@ -1,5 +1,6 @@
 package uk.cloudmc.swrc.net;
 
+import net.minecraft.client.MinecraftClient;
 import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.net.packets.*;
 import uk.cloudmc.swrc.util.ChatFormatter;
@@ -16,28 +17,32 @@ public class RCWebsocketConnection extends AbstractWebsocketConnection {
 
     @Override
     public void onMessage(ByteBuffer buffer) {
-
         byte[] bytes = buffer.array();
 
         int packetId = bytes[0] & 0xFF;
         byte[] payload = Arrays.copyOfRange(bytes, 1, bytes.length);
 
-        switch (packetId) {
-            case(S2CHelloPacket.packetId):
-                onPacket(new S2CHelloPacket().fromBytes(payload));
-                break;
-            case(S2CHandshakePacket.packetId):
-                onPacket(new S2CHandshakePacket().fromBytes(payload));
-                break;
-            case(S2CMessagePacket.packetId):
-                onPacket(new S2CMessagePacket().fromBytes(payload));
-                break;
-            case 0xFF: break;
-            default:
-                SWRC.LOGGER.info("Got unknown packet id {}", packetId);
-                SWRC.LOGGER.info(Arrays.toString(bytes));
-        }
+        // Move handling to the MC client thread
+        MinecraftClient.getInstance().execute(() -> {
+            switch (packetId) {
+                case (S2CHelloPacket.packetId):
+                    onPacket(new S2CHelloPacket().fromBytes(payload));
+                    break;
+                case (S2CHandshakePacket.packetId):
+                    onPacket(new S2CHandshakePacket().fromBytes(payload));
+                    break;
+                case (S2CMessagePacket.packetId):
+                    onPacket(new S2CMessagePacket().fromBytes(payload));
+                    break;
+                case 0xFF:
+                    break;
+                default:
+                    SWRC.LOGGER.info("Got unknown packet id {}", packetId);
+                    SWRC.LOGGER.info(Arrays.toString(bytes));
+            }
+        });
     }
+
 
     @Override
     public void onPacket(Packet<?> uPacket) {

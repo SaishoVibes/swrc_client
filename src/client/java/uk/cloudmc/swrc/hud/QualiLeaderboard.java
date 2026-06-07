@@ -32,7 +32,7 @@ public class QualiLeaderboard implements Hud {
     private static final int COLOR_YELLOW_LERP = 0xFFf5ee6a;
     private static final int COLOR_RED_LERP = 0xFFf56a6a;
 
-    private static final String STR_INTERVAL = "INTERVAL";
+    private static final String STR_INTERVAL = "GAP";
     private static final String STR_DASH = "-";
 
     private static int cachedDashWidth = -1;

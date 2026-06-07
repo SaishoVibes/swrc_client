@@ -110,8 +110,9 @@ public class TrackBuilderRenderer {
 
         queue.submitCustom(matrixStack, DEBUG_LINE_LAYER, (entry, consumer) -> {
             Matrix4f m = entry.getPositionMatrix();
-            consumer.vertex(m, fPos.x, fPos.y - 2, fPos.z).color(colorFaded).lineWidth(1.0f);
-            consumer.vertex(m, fPos.x, fPos.y + 2, fPos.z).color(color).lineWidth(1.0f);
+            // Pole is vertical, so normal is (0, 1, 0)
+            consumer.vertex(m, fPos.x, fPos.y - 2, fPos.z).color(colorFaded).normal(entry, 0, 1, 0).lineWidth(1.0f);
+            consumer.vertex(m, fPos.x, fPos.y + 2, fPos.z).color(color).normal(entry, 0, 1, 0).lineWidth(1.0f);
         });
     }
 
@@ -121,8 +122,9 @@ public class TrackBuilderRenderer {
 
         queue.submitCustom(matrixStack, DEBUG_LINE_LAYER, (entry, consumer) -> {
             Matrix4f m = entry.getPositionMatrix();
-            consumer.vertex(m, fPos1.x, fPos1.y, fPos1.z).color(color & 0xFFFFFF00).lineWidth(1.0f);
-            consumer.vertex(m, fPos2.x, fPos2.y, fPos2.z).color(color).lineWidth(1.0f);
+            Vector3f normal = new Vector3f(fPos2.x - fPos1.x, fPos2.y - fPos1.y, fPos2.z - fPos1.z).normalize();
+            consumer.vertex(m, fPos1.x, fPos1.y, fPos1.z).color(color & 0xFFFFFF00).normal(entry, normal.x, normal.y, normal.z).lineWidth(1.0f);
+            consumer.vertex(m, fPos2.x, fPos2.y, fPos2.z).color(color).normal(entry, normal.x, normal.y, normal.z).lineWidth(1.0f);
         });
     }
 

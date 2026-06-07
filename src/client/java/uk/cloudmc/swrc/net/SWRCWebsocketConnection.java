@@ -1,5 +1,6 @@
 package uk.cloudmc.swrc.net;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
@@ -38,27 +39,39 @@ public class SWRCWebsocketConnection extends AbstractWebsocketConnection {
         int packetId = bytes[0] & 0xFF;
         byte[] payload = Arrays.copyOfRange(bytes, 1, bytes.length);
 
-        switch (packetId) {
-            case(S2CHelloPacket.packetId):
-                onPacket(new S2CHelloPacket().fromBytes(payload));
-                break;
-            case(S2CHandshakePacket.packetId):
-                onPacket(new S2CHandshakePacket().fromBytes(payload));
-                break;
-            case(S2CMessagePacket.packetId):
-                onPacket(new S2CMessagePacket().fromBytes(payload));
-                break;
-            case(S2CSessionsPacket.packetId):
-                onPacket(new S2CSessionsPacket().fromBytes(payload));
-                break;
-            case(S2CNewSessionPacket.packetId):
-                onPacket(new S2CNewSessionPacket().fromBytes(payload));
-            case 0xFF: break;
-            default:
-                SWRC.LOGGER.warn("Got unknown packet id {}", packetId);
-                SWRC.LOGGER.info(Arrays.toString(bytes));
-        }
+        // Schedule packet handling on the Minecraft client thread
+        MinecraftClient.getInstance().execute(() -> {
+            switch (packetId) {
+                case (S2CHelloPacket.packetId):
+                    onPacket(new S2CHelloPacket().fromBytes(payload));
+                    break;
+
+                case (S2CHandshakePacket.packetId):
+                    onPacket(new S2CHandshakePacket().fromBytes(payload));
+                    break;
+
+                case (S2CMessagePacket.packetId):
+                    onPacket(new S2CMessagePacket().fromBytes(payload));
+                    break;
+
+                case (S2CSessionsPacket.packetId):
+                    onPacket(new S2CSessionsPacket().fromBytes(payload));
+                    break;
+
+                case (S2CNewSessionPacket.packetId):
+                    onPacket(new S2CNewSessionPacket().fromBytes(payload));
+                    break;
+
+                case 0xFF:
+                    break;
+
+                default:
+                    SWRC.LOGGER.warn("Got unknown packet id {}", packetId);
+                    SWRC.LOGGER.info(Arrays.toString(bytes));
+            }
+        });
     }
+
 
     public Map<String, S2CSessionsPacket.Session> getSessions() {
         return sessions;
@@ -66,50 +79,66 @@ public class SWRCWebsocketConnection extends AbstractWebsocketConnection {
 
     @Override
     public void onPacket(Packet<?> uPacket) {
-        if (uPacket instanceof S2CHelloPacket packet) {
-            SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[SWRC] Successfully connected to server."));
+        MinecraftClient.getInstance().execute(() -> {
+            // Everything inside here now runs on the MC client thread
+            if (uPacket instanceof S2CHelloPacket packet) {
+                SWRC.minecraftClient.inGameHud.getChatHud().addMessage(
+                        ChatFormatter.GENERIC_MESSAGE("[SWRC] Successfully connected to server.")
+                );
 
-            server_label = packet.server_label;
+                server_label = packet.server_label;
 
-            C2SHandshakePacket handshake = new C2SHandshakePacket();
+                C2SHandshakePacket handshake = new C2SHandshakePacket();
 
-            assert SWRC.minecraftClient.player != null;
+                assert SWRC.minecraftClient.player != null;
 
-            handshake.username = SWRC.minecraftClient.player.getName().getString();
-            handshake.uuid = SWRC.minecraftClient.player.getUuidAsString();
-            handshake.version = SWRC.VERSION;
-            handshake.clock_precise = NTPTimeSync.isPrecise();
-            handshake.clock_precision = NTPTimeSync.getOffset();
+                handshake.username = SWRC.minecraftClient.player.getName().getString();
+                handshake.uuid = SWRC.minecraftClient.player.getUuidAsString();
+                handshake.version = SWRC.VERSION;
+                handshake.clock_precise = NTPTimeSync.isPrecise();
+                handshake.clock_precision = NTPTimeSync.getOffset();
 
-            sendPacket(handshake);
-        }
-        if (uPacket instanceof S2CHandshakePacket packet) {
-            motd = packet.motd;
-        }
-        if (uPacket instanceof S2CMessagePacket packet) {
-            SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE(String.format("[SWRC] %s", packet.message)));
-        }
-        if (uPacket instanceof S2CSessionsPacket packet) {
-            server_performance = packet.perf;
-            sessions = packet.sessions;
-
-            if (!has_recieved_session) {
-
-                this.promptSessions();
-
-                has_recieved_session = true;
+                sendPacket(handshake);
             }
-        }
-        if (uPacket instanceof S2CNewSessionPacket packet) {
-            SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE(String.format("[SWRC] New session created %s", packet.id)));
 
-            SWRCConfig.getInstance().race_key = packet.race_key;
-            SWRCConfig.getInstance().save();
+            if (uPacket instanceof S2CHandshakePacket packet) {
+                motd = packet.motd;
+            }
 
-            GLFW.glfwSetClipboardString(SWRC.minecraftClient.getWindow().getHandle(), packet.race_key);
+            if (uPacket instanceof S2CMessagePacket packet) {
+                SWRC.minecraftClient.inGameHud.getChatHud().addMessage(
+                        ChatFormatter.GENERIC_MESSAGE("[SWRC] " + packet.message)
+                );
+            }
 
-            SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("Race Key copied to clipboard"));
-        }
+            if (uPacket instanceof S2CSessionsPacket packet) {
+                server_performance = packet.perf;
+                sessions = packet.sessions;
+
+                if (!has_recieved_session) {
+                    promptSessions();
+                    has_recieved_session = true;
+                }
+            }
+
+            if (uPacket instanceof S2CNewSessionPacket packet) {
+                SWRC.minecraftClient.inGameHud.getChatHud().addMessage(
+                        ChatFormatter.GENERIC_MESSAGE("[SWRC] New session created " + packet.id)
+                );
+
+                SWRCConfig.getInstance().race_key = packet.race_key;
+                SWRCConfig.getInstance().save();
+
+                GLFW.glfwSetClipboardString(
+                        SWRC.minecraftClient.getWindow().getHandle(),
+                        packet.race_key
+                );
+
+                SWRC.minecraftClient.inGameHud.getChatHud().addMessage(
+                        ChatFormatter.GENERIC_MESSAGE("Race Key copied to clipboard")
+                );
+            }
+        });
     }
 
     public void promptSessions() {

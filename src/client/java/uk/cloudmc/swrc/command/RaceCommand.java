@@ -10,6 +10,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
@@ -19,6 +20,11 @@ import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.entity.vehicle.ChestBoatEntity;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import uk.cloudmc.swrc.Race;
 import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.WebsocketManager;
@@ -30,7 +36,10 @@ import uk.cloudmc.swrc.util.PlayerNameValidator;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.text.Format;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -38,6 +47,17 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.*;
 
 public class
 RaceCommand implements CommandNodeProvider {
+
+    private static class BoolSuggestor implements SuggestionProvider<FabricClientCommandSource> {
+        @Override
+        public CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+
+            if ("false".toLowerCase().contains(builder.getRemainingLowerCase())) builder.suggest("false");
+            if ("true".toLowerCase().contains(builder.getRemainingLowerCase())) builder.suggest("true");
+
+            return builder.buildFuture();
+        }
+    }
 
     private static class PlayerSuggestor implements SuggestionProvider<FabricClientCommandSource> {
         @Override
@@ -66,6 +86,41 @@ RaceCommand implements CommandNodeProvider {
 
                         builder.suggest(name);
                     }
+                }
+            }
+
+            return builder.buildFuture();
+        }
+    }
+
+    private static class ControllerSuggestor implements SuggestionProvider<FabricClientCommandSource> {
+        @Override
+        public CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+
+            if (SWRC.getRace() != null) {
+                for (String player : SWRC.getRace().rc_clients.keySet()) {
+
+                    if (!player.toLowerCase().contains(builder.getRemainingLowerCase())) continue;
+
+                    builder.suggest(player);
+                }
+            }
+
+            return builder.buildFuture();
+        }
+    }
+
+    private static class RacerSuggestor implements SuggestionProvider<FabricClientCommandSource> {
+        @Override
+        public CompletableFuture<Suggestions> getSuggestions(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+
+            if (SWRC.getRace() != null) {
+                for (String player : SWRC.getRace().racer_clients.keySet()) {
+                    if (SWRC.getRace().rc_clients.containsKey(player)) continue;
+
+                    if (!player.toLowerCase().contains(builder.getRemainingLowerCase())) continue;
+
+                    builder.suggest(player);
                 }
             }
 
@@ -115,170 +170,335 @@ RaceCommand implements CommandNodeProvider {
     @Override
     public LiteralArgumentBuilder<FabricClientCommandSource> command() {
         return literal("race")
-            .executes(this::doRace)
-            .then(
-                literal("state")
+                .executes(this::doRace)
                 .then(
-                    literal("NONE")
-                    .executes(context -> doUpdateRaceState(context, Race.RaceState.NONE))
+                        literal("state")
+                                .then(
+                                        literal("NONE")
+                                                .executes(context -> doUpdateRaceState(context, Race.RaceState.NONE))
+                                )
+                                .then(
+                                        literal("RACE")
+                                                .executes(context -> doUpdateRaceState(context, Race.RaceState.RACE))
+                                )
+                                .then(
+                                        literal("QUALI")
+                                                .executes(context -> doUpdateRaceState(context, Race.RaceState.QUALI))
+                                )
                 )
                 .then(
-                    literal("RACE")
-                    .executes(context -> doUpdateRaceState(context, Race.RaceState.RACE))
+                        literal("quit")
+                                .executes(this::doQuit)
                 )
                 .then(
-                    literal("QUALI")
-                    .executes(context -> doUpdateRaceState(context, Race.RaceState.QUALI))
+                        literal("clients")
+                                .executes(this::doClients)
                 )
-            )
-            .then(
-                literal("quit")
-                .executes(this::doQuit)
-            )
-            .then(
-                literal("exit")
-                .executes(this::doExit)
-            )
-            .then(
-                literal("pop_flap")
-                .executes(this::doPopFlap)
-            )
-            .then(
-                literal("player")
+                .then(
+                        literal("tracking")
+                                .then(
+                                        argument("controller", StringArgumentType.string())
+                                                .suggests(new ControllerSuggestor())
+                                                .then(
+                                                        argument("value", StringArgumentType.string())
+                                                                .suggests(new BoolSuggestor())
+                                                                .executes(this::doTrackingSet)
+                                                )
+                                )
+                )
+                .then(
+                        literal("exit")
+                                .executes(this::doExit)
+                )
+                .then(
+                        literal("pop_flap")
+                                .executes(this::doPopFlap)
+                )
+                .then(
+                        literal("url")
+                                .executes(this::doRaceUrl)
+                )
+                .then(
+                        literal("dump")
+                                .executes(this::doRaceDump)
+                                .then(
+                                        literal("i_understand_what_i_am_doing")
+                                                .executes(this::doRaceDumpFr)
+                                )
+                )
+                .then(
+                        literal("player")
 
-                .then(
-                    literal("add")
-                    .then(
-                        argument("name", StringArgumentType.string())
-                        .suggests(new PlayerSuggestor())
-                        .executes(this::doAddPlayerByName)
-                    )
+                                .then(
+                                        literal("add")
+                                                .then(
+                                                        argument("name", StringArgumentType.string())
+                                                                .suggests(new PlayerSuggestor())
+                                                                .executes(this::doAddPlayerByName)
+                                                )
+                                )
+                                .then(
+                                        literal("remove")
+                                                .then(
+                                                        argument("name", StringArgumentType.string())
+                                                                .suggests(new PlayerSuggestor())
+                                                                .executes(this::doRemovePlayerByName)
+                                                )
+                                )
+                                .then(
+                                        literal("file")
+                                                .then(
+                                                        argument("filename", StringArgumentType.string())
+                                                                .suggests(new PlayerFileSuggestor())
+                                                                .then(
+                                                                        literal("all")
+                                                                                .executes(this::doAddPlayersFromFile)
+                                                                )
+                                                                .then(
+                                                                        literal("top")
+                                                                                .then(
+                                                                                        argument("count", IntegerArgumentType.integer(1))
+                                                                                                .executes(this::doAddPlayersFromFileTop)
+                                                                                )
+                                                                )
+                                                )
+                                )
+                                .then(
+                                        literal("near")
+                                                .then(
+                                                        argument("range", FloatArgumentType.floatArg(0))
+                                                                .executes(this::doAddPlayersNearby)
+                                                )
+                                )
+                                .then(
+                                        literal("boat")
+                                                .then(
+                                                        argument("range", FloatArgumentType.floatArg(0))
+                                                                .executes(this::doAddPlayersNearbyBoat)
+                                                )
+                                )
+                                .then(
+                                        literal("reorder")
+                                                .then(
+                                                        literal("randomly")
+                                                                .executes(this::doReorderRandomly)
+                                                )
+                                                .then(
+                                                        literal("reversed")
+                                                                .executes(this::doReorderReversed)
+                                                )
+                                                .then(
+                                                        literal("zorder")
+                                                                .executes(this::doReorderSortLooking)
+                                                )
+                                                .then(
+                                                        literal("file")
+                                                                .then(
+                                                                        argument("filename", StringArgumentType.string())
+                                                                                .suggests(new PlayerFileSuggestor())
+                                                                                .executes(this::doReorderFromFile)
+                                                                )
+                                                )
+                                                .then(
+                                                        literal("tofront")
+                                                                .then(
+                                                                        argument("player", StringArgumentType.string())
+                                                                                .suggests(new PlayerSuggestor())
+                                                                                .executes(this::doSendToFront)
+                                                                )
+                                                )
+                                                .then(
+                                                        literal("toback")
+                                                                .then(
+                                                                        argument("player", StringArgumentType.string())
+                                                                                .suggests(new PlayerSuggestor())
+                                                                                .executes(this::doSendToBack)
+                                                                )
+                                                )
+                                )
+                                .then(
+                                        literal("rename")
+                                                .then(
+                                                        argument("from", StringArgumentType.string())
+                                                                .then(
+                                                                        argument("to", StringArgumentType.string())
+                                                                                .executes(this::doRenamePlayer)
+                                                                )
+                                                )
+                                )
                 )
                 .then(
-                    literal("remove")
-                    .then(
-                        argument("name", StringArgumentType.string())
-                        .suggests(new PlayerSuggestor())
-                        .executes(this::doRemovePlayerByName)
-                    )
+                        literal("load")
+                                .then(
+                                        argument("track_file", StringArgumentType.string())
+                                                .suggests(new TrackFileSuggestor())
+                                                .then(
+                                                        argument("race_id", StringArgumentType.string())
+                                                                .then(
+                                                                        argument("laps", IntegerArgumentType.integer(1))
+                                                                                .then(
+                                                                                        argument("pits", IntegerArgumentType.integer(0))
+                                                                                                .executes(this::doLoadNewRace)
+                                                                                )
+                                                                )
+                                                )
+                                )
                 )
                 .then(
-                    literal("file")
-                    .then(
-                        argument("filename", StringArgumentType.string())
-                        .suggests(new PlayerFileSuggestor())
-                        .then(
-                            literal("all")
-                            .executes(this::doAddPlayersFromFile)
-                        )
-                        .then(
-                            literal("top")
-                            .then(
-                                argument("count", IntegerArgumentType.integer(1))
-                                .executes(this::doAddPlayersFromFileTop)
+                        literal("export")
+                                .then(
+                                        literal("positions")
+                                                .then(
+                                                        argument("filename", StringArgumentType.string())
+                                                                .executes(this::doExportPositions)
+                                                )
+                                )
+                                .then(
+                                        literal("flaps")
+                                                .then(
+                                                        argument("filename", StringArgumentType.string())
+                                                                .executes(this::doExportFlaps)
+                                                )
+                                )
+                )
+                .then(new RaceCountdownTimerCommand().command());
+    }
+
+    private int doTrackingSet(CommandContext<FabricClientCommandSource> context) {
+        String controller = StringArgumentType.getString(context, "controller");
+        boolean value = Boolean.parseBoolean(StringArgumentType.getString(context, "value"));
+
+        if (WebsocketManager.rcSocketAvalible()) {
+
+            C2SControllerTrackingPacket packet = new C2SControllerTrackingPacket();
+
+            packet.controller = controller;
+            packet.state = value;
+
+            WebsocketManager.rcWebsocketConnection.sendPacket(packet);
+
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Setting Tracking."));
+            return Command.SINGLE_SUCCESS;
+        }
+
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
+        return 0;
+    }
+
+    private int doClients(CommandContext<FabricClientCommandSource> context) {
+        if (SWRC.getRace() == null) {
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as there isn't a race active"));
+            return 0;
+        }
+
+        MutableText text = Text.empty();
+
+        text = text.append(ChatFormatter.SWRC_PREFIX());
+        text = text.append(Text.literal(" Connected Clients\n"));
+
+        for (Map.Entry<String, S2CUpdatePacket.RCClient> entry : SWRC.getRace().rc_clients.entrySet()) {
+            text = text.append(
+                    Text.empty()
+                            .append(Text.literal("RC ").styled(style -> style.withFormatting(Formatting.RED)))
+                            .append(Text.literal(entry.getKey()).styled(style -> style.withFormatting(Formatting.AQUA)))
+                            .append(Text.literal(" ("))
+                            .append(Text.literal(entry.getValue().version).styled(style -> style.withFormatting(Formatting.AQUA)))
+                            .append(Text.literal(") Precise: "))
+                            .append(
+                                    entry.getValue().clock_precise ?
+                                            Text.literal("YES").styled(style -> style.withFormatting(Formatting.GREEN)) :
+                                            Text.literal("NO").styled(style -> style.withFormatting(Formatting.RED))
                             )
-                        )
-                    )
-                )
-                .then(
-                    literal("near")
-                    .then(
-                        argument("range", FloatArgumentType.floatArg(0))
-                        .executes(this::doAddPlayersNearby)
-                    )
-                )
-                .then(
-                    literal("boat")
-                    .then(
-                        argument("range", FloatArgumentType.floatArg(0))
-                        .executes(this::doAddPlayersNearbyBoat)
-                    )
-                )
-                .then(
-                    literal("reorder")
-                    .then(
-                        literal("randomly")
-                        .executes(this::doReorderRandomly)
-                    )
-                    .then(
-                        literal("reversed")
-                        .executes(this::doReorderReversed)
-                    )
-                    .then(
-                        literal("zorder")
-                        .executes(this::doReorderSortLooking)
-                    )
-                    .then(
-                        literal("file")
-                        .then(
-                            argument("filename", StringArgumentType.string())
-                            .suggests(new PlayerFileSuggestor())
-                            .executes(this::doReorderFromFile)
-                        )
-                    )
-                    .then(
-                        literal("tofront")
-                        .then(
-                            argument("player", StringArgumentType.string())
-                            .suggests(new PlayerSuggestor())
-                            .executes(this::doSendToFront)
-                        )
-                    )
-                    .then(
-                        literal("toback")
-                        .then(
-                            argument("player", StringArgumentType.string())
-                            .suggests(new PlayerSuggestor())
-                            .executes(this::doSendToBack)
-                        )
-                    )
-                )
-                .then(
-                    literal("rename")
-                    .then(
-                        argument("from", StringArgumentType.string())
-                        .then(
-                            argument("to", StringArgumentType.string())
-                            .executes(this::doRenamePlayer)
-                        )
-                    )
-                )
-            )
-            .then(
-                literal("load")
-                .then(
-                    argument("track_file", StringArgumentType.string())
-                    .suggests(new TrackFileSuggestor())
-                    .then(
-                        argument("race_id", StringArgumentType.string())
-                        .then(
-                            argument("laps", IntegerArgumentType.integer(1))
-                            .then(
-                                argument("pits", IntegerArgumentType.integer(0))
-                                .executes(this::doLoadNewRace)
+                            .append(Text.literal(" Tracking: "))
+                            .append(
+                                    entry.getValue().tracking ?
+                                            Text.literal("YES").styled(style -> style.withFormatting(Formatting.GREEN)) :
+                                            Text.literal("NO").styled(style -> style.withFormatting(Formatting.RED))
                             )
-                        )
-                    )
-                )
-            )
-            .then(
-                literal("export")
-                .then(
-                    literal("positions")
-                    .then(
-                        argument("filename", StringArgumentType.string())
-                        .executes(this::doExportPositions)
-                    )
-                )
-                .then(
-                    literal("flaps")
-                    .then(
-                        argument("filename", StringArgumentType.string())
-                        .executes(this::doExportFlaps)
-                    )
-                )
-            )
-            .then(new RaceCountdownTimerCommand().command());
+                            .append(Text.literal("\n"))
+            );
+        }
+
+        for (Map.Entry<String, S2CUpdatePacket.RacerClient> entry : SWRC.getRace().racer_clients.entrySet()) {
+            if (SWRC.getRace().rc_clients.containsKey(entry.getKey())) continue;
+
+            text = text.append(
+                    Text.empty()
+                            .append(Text.literal("RACER ").styled(style -> style.withFormatting(Formatting.GOLD)))
+                            .append(Text.literal(entry.getKey()).styled(style -> style.withFormatting(Formatting.AQUA)))
+                            .append(Text.literal(" ("))
+                            .append(Text.literal(entry.getValue().version).styled(style -> style.withFormatting(Formatting.AQUA)))
+                            .append(Text.literal(")"))
+                            .append(Text.literal("\n"))
+            );
+        }
+
+        context.getSource().sendFeedback(text);
+
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int doRaceDump(CommandContext<FabricClientCommandSource> context) {
+
+        if (WebsocketManager.rcSocketAvalible()) {
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Click to confirm dumping of race ").append(
+                    Text.literal("[DUMP]")
+                            .styled(style -> style
+                                    .withClickEvent(new ClickEvent.SuggestCommand("/swrc race dump i_understand_what_i_am_doing"))
+                                    .withHoverEvent(new HoverEvent.ShowText(Text.literal("I am sure I would like to dump the race")))
+                            )
+
+            ));
+            return Command.SINGLE_SUCCESS;
+        }
+
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
+        return 0;
+    }
+
+    private int doRaceDumpFr(CommandContext<FabricClientCommandSource> context) {
+
+        if (WebsocketManager.rcSocketAvalible()) {
+
+            C2SEndRacePacket packet = new C2SEndRacePacket();
+
+            packet.dump = true;
+
+            WebsocketManager.rcWebsocketConnection.sendPacket(packet);
+
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Dumping Race."));
+            return Command.SINGLE_SUCCESS;
+        }
+
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
+        return 0;
+    }
+
+    private int doRaceUrl(CommandContext<FabricClientCommandSource> context) {
+        if (SWRC.getRace() == null) {
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as there isn't a race active"));
+            return 0;
+        }
+
+        // probably move this
+        String url = "https://swrc.cloudmc.uk/races/" + SWRC.getRace().getId();
+
+        context.getSource().sendFeedback(
+                Text.empty()
+                        .append(ChatFormatter.SWRC_PREFIX())
+                        .append(Text.literal(" "))
+                        .append(Text.literal(url).styled(style -> style
+                                .withFormatting(Formatting.UNDERLINE)
+                                .withFormatting(Formatting.BLUE)
+                                .withClickEvent(new ClickEvent.OpenUrl(URI.create(url)))
+                                .withHoverEvent(new HoverEvent.ShowText(Text.literal(url).styled(style1 -> style1.withFormatting(Formatting.BLUE))))
+                        ))
+        );
+
+        return Command.SINGLE_SUCCESS;
     }
 
     private int doSendToBack(CommandContext<FabricClientCommandSource> context) {
@@ -287,7 +507,8 @@ RaceCommand implements CommandNodeProvider {
         if (WebsocketManager.rcSocketAvalible()) {
 
             if (SWRC.getRace() == null) {
-                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("No active race"));
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as there isn't a race active"));
+                context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc race load ", "with a race id and a track file"));
                 return 0;
             }
 
@@ -302,7 +523,8 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -311,8 +533,6 @@ RaceCommand implements CommandNodeProvider {
 
         if (WebsocketManager.rcSocketAvalible()) {
             String filename = target + ".positions.json";
-
-            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Reading from config/swrc/results/%s", filename)));
 
             try {
                 String content = Files.readString(FabricLoader.getInstance().getConfigDir().resolve(SWRC.NAMESPACE).resolve("results").resolve(filename));
@@ -338,7 +558,8 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -348,7 +569,8 @@ RaceCommand implements CommandNodeProvider {
         if (WebsocketManager.rcSocketAvalible()) {
 
             if (SWRC.getRace() == null) {
-                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("No active race"));
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as there isn't a race active"));
+                context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc race load ", "with a race id and a track file"));
                 return 0;
             }
 
@@ -363,7 +585,8 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -375,7 +598,8 @@ RaceCommand implements CommandNodeProvider {
         if (WebsocketManager.rcSocketAvalible()) {
 
             if (SWRC.getRace() == null) {
-                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("No active race"));
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as there isn't a race active"));
+                context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc race load ", "with a race id and a track file"));
                 return 0;
             }
 
@@ -418,7 +642,8 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -426,7 +651,8 @@ RaceCommand implements CommandNodeProvider {
         if (WebsocketManager.rcSocketAvalible()) {
 
             if (SWRC.getRace() == null) {
-                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("No active race"));
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as there isn't a race active"));
+                context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc race load ", "with a race id and a track file"));
                 return 0;
             }
 
@@ -441,7 +667,8 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -449,7 +676,8 @@ RaceCommand implements CommandNodeProvider {
         if (WebsocketManager.rcSocketAvalible()) {
 
             if (SWRC.getRace() == null) {
-                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("No active race"));
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as there isn't a race active"));
+                context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc race load ", "with a race id and a track file"));
                 return 0;
             }
 
@@ -464,7 +692,8 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -473,7 +702,8 @@ RaceCommand implements CommandNodeProvider {
             assert SWRC.minecraftClient.player != null;
 
             if (SWRC.getRace() == null) {
-                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("No active race"));
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as there isn't a race active"));
+                context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc race load ", "with a race id and a track file"));
                 return 0;
             }
 
@@ -489,8 +719,8 @@ RaceCommand implements CommandNodeProvider {
 
                 if (player != null) {
                     return SWRC.minecraftClient.player.getRotationVec(1f).dotProduct(
-                             player.getEntityPos().subtract(SWRC.minecraftClient.player.getEntityPos())
-                     );
+                            player.getEntityPos().subtract(SWRC.minecraftClient.player.getEntityPos())
+                    );
                 }
 
                 return Double.MAX_VALUE;
@@ -503,7 +733,8 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -517,7 +748,8 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -535,14 +767,23 @@ RaceCommand implements CommandNodeProvider {
             names.add(new String[]{raceLeaderboardPosition.player_name, String.valueOf(raceLeaderboardPosition.flap)});
         });
 
+        Path path = FabricLoader.getInstance().getConfigDir().resolve(SWRC.NAMESPACE).resolve("results").resolve(filename);
+
         try {
-            Files.writeString(FabricLoader.getInstance().getConfigDir().resolve(SWRC.NAMESPACE).resolve("results").resolve(filename), new Gson().toJson(names));
+            Files.writeString(path, new Gson().toJson(names));
         } catch (IOException e) {
             context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Failed to save to config/swrc/results/%s - %s", filename, e.getMessage())));
             return 0;
         }
 
         context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Saved to config/swrc/results/%s", filename)));
+        context.getSource().sendFeedback(Text.literal("Click to open file").styled(
+                style -> style
+                        .withFormatting(Formatting.GRAY)
+                        .withFormatting(Formatting.UNDERLINE)
+                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("Open " + FabricLoader.getInstance().getGameDir().relativize(path))))
+                        .withClickEvent(new ClickEvent.OpenFile(path))
+        ));
 
         return Command.SINGLE_SUCCESS;
     }
@@ -561,14 +802,23 @@ RaceCommand implements CommandNodeProvider {
             names.add(raceLeaderboardPosition.player_name);
         });
 
+        Path path = FabricLoader.getInstance().getConfigDir().resolve(SWRC.NAMESPACE).resolve("results").resolve(filename);
+
         try {
-            Files.writeString(FabricLoader.getInstance().getConfigDir().resolve(SWRC.NAMESPACE).resolve("results").resolve(filename), new Gson().toJson(names));
+            Files.writeString(path, new Gson().toJson(names));
         } catch (IOException e) {
             context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Failed to save to config/swrc/results/%s - %s", filename, e.getMessage())));
             return 0;
         }
 
         context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Saved to config/swrc/results/%s", filename)));
+        context.getSource().sendFeedback(Text.literal("Click to open file").styled(
+                style -> style
+                        .withFormatting(Formatting.GRAY)
+                        .withFormatting(Formatting.UNDERLINE)
+                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("Open " + FabricLoader.getInstance().getGameDir().relativize(path))))
+                        .withClickEvent(new ClickEvent.OpenFile(path))
+        ));
 
         return Command.SINGLE_SUCCESS;
     }
@@ -581,8 +831,6 @@ RaceCommand implements CommandNodeProvider {
             int pits = IntegerArgumentType.getInteger(context, "pits");
 
             String filename = target + ".json";
-
-            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Reading from config/swrc/tracks/%s", filename)));
 
             try {
                 String content = Files.readString(FabricLoader.getInstance().getConfigDir().resolve(SWRC.NAMESPACE).resolve("tracks").resolve(filename));
@@ -609,7 +857,8 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -640,7 +889,8 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -670,7 +920,8 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -680,8 +931,6 @@ RaceCommand implements CommandNodeProvider {
 
         if (WebsocketManager.rcSocketAvalible()) {
             String filename = target + ".positions.json";
-
-            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Reading from config/swrc/results/%s", filename)));
 
             try {
                 String content = Files.readString(FabricLoader.getInstance().getConfigDir().resolve(SWRC.NAMESPACE).resolve("results").resolve(filename));
@@ -712,7 +961,8 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -721,8 +971,6 @@ RaceCommand implements CommandNodeProvider {
 
         if (WebsocketManager.rcSocketAvalible()) {
             String filename = target + ".positions.json";
-
-            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Reading from config/swrc/results/%s", filename)));
 
             try {
                 String content = Files.readString(FabricLoader.getInstance().getConfigDir().resolve(SWRC.NAMESPACE).resolve("results").resolve(filename));
@@ -755,8 +1003,9 @@ RaceCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
-         return 0;
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
+        return 0;
     }
 
     private int doRemovePlayerByName(CommandContext<FabricClientCommandSource> context) {
@@ -770,11 +1019,12 @@ RaceCommand implements CommandNodeProvider {
 
             WebsocketManager.rcWebsocketConnection.sendPacket(packet);
 
-            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Send Request to remove %s", player_name)));
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Removing %s", player_name)));
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -791,11 +1041,12 @@ RaceCommand implements CommandNodeProvider {
 
             PlayerNameValidator.validateName(player_name);
 
-            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Send Request to add %s", player_name)));
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Adding %s", player_name)));
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Websocket disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
@@ -807,14 +1058,18 @@ RaceCommand implements CommandNodeProvider {
 
             WebsocketManager.rcWebsocketConnection.sendPacket(packet);
 
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Ending Race."));
             return Command.SINGLE_SUCCESS;
         }
 
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 
     private int doQuit(CommandContext<FabricClientCommandSource> context) {
         SWRC.setRace(null);
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Quit active race"));
         return Command.SINGLE_SUCCESS;
     }
 
@@ -831,28 +1086,28 @@ RaceCommand implements CommandNodeProvider {
     }
 
     public static int doUpdateRaceState(CommandContext<FabricClientCommandSource> context, Race.RaceState state) {
-        Race activeRace = SWRC.getRace();
 
-        if (activeRace != null) {
-            if (WebsocketManager.rcSocketAvalible()) {
+        if (WebsocketManager.rcSocketAvalible()) {
+            Race activeRace = SWRC.getRace();
+
+            if (activeRace != null) {
                 C2SRaceState packet = new C2SRaceState();
 
                 packet.state = state;
 
                 WebsocketManager.rcWebsocketConnection.sendPacket(packet);
 
-                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Sending request to update state to %s", state)));
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Updating state to %s", state)));
 
                 return Command.SINGLE_SUCCESS;
             }
 
-            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("RC Socket not available"));
-
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("No active race present"));
             return 0;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("No active race present"));
-
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed: RC Socket Disconnected"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc server sessions", "and connecting"));
         return 0;
     }
 }

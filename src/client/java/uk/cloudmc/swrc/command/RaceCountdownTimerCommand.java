@@ -21,21 +21,21 @@ public class RaceCountdownTimerCommand implements CommandNodeProvider {
     @Override
     public LiteralArgumentBuilder<FabricClientCommandSource> command() {
         return literal("timer")
-            .then(
-                literal("new")
                 .then(
-                    argument("time", StringArgumentType.string())
-                    .executes(this::doNewTimer)
+                        literal("new")
+                                .then(
+                                        argument("time", StringArgumentType.string())
+                                                .executes(this::doNewTimer)
+                                )
                 )
-            )
-            .then(
-                literal("start")
-                .executes(this::doStartTimer)
-            )
-            .then(
-                literal("stop")
-                .executes(this::doStopTimer)
-            );
+                .then(
+                        literal("start")
+                                .executes(this::doStartTimer)
+                )
+                .then(
+                        literal("stop")
+                                .executes(this::doStopTimer)
+                );
     }
 
     private int doStopTimer(CommandContext<FabricClientCommandSource> context) {
@@ -54,7 +54,7 @@ public class RaceCountdownTimerCommand implements CommandNodeProvider {
         if (WebsocketManager.rcSocketAvalible()) {
             C2STimerPacket timerPacket = new C2STimerPacket();
             timerPacket.duration = SWRC.getRace().getTimerDuration();
-            timerPacket.start_time = System.currentTimeMillis();
+            timerPacket.start_time = NTPTimeSync.getTrueTime();
             WebsocketManager.rcWebsocketConnection.sendPacket(timerPacket);
             context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("Starting %s second(s) timer.", timerPacket.duration)));
             return Command.SINGLE_SUCCESS;

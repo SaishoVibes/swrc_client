@@ -4,12 +4,12 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import uk.cloudmc.swrc.SWRC;
-import uk.cloudmc.swrc.util.ChatFormatter;
-
 import net.fabricmc.loader.api.FabricLoader;
+import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.SWRCConfig;
 import uk.cloudmc.swrc.WebsocketManager;
+import uk.cloudmc.swrc.util.ChatFormatter;
+
 import java.lang.module.Configuration;
 import java.net.URI;
 
@@ -46,6 +46,7 @@ public class RootCommand implements CommandNodeProvider {
             context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed to connect: " + e.getMessage()));
             return 0;
         }
+
         return Command.SINGLE_SUCCESS;
     }
 }
