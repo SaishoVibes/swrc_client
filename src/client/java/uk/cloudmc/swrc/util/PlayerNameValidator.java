@@ -40,12 +40,12 @@ public class PlayerNameValidator {
         assert SWRC.minecraftClient.getNetworkHandler() != null;
 
         for (PlayerListEntry playerListEntry : SWRC.minecraftClient.getNetworkHandler().getListedPlayerListEntries()) {
-            if (levenshteinDistance(name, playerListEntry.getProfile().getName()) < 3 && !name.equals(playerListEntry.getProfile().getName())) {
+            if (levenshteinDistance(name, playerListEntry.getProfile().name()) < 3 && !name.equals(playerListEntry.getProfile().name())) {
                 SWRC.minecraftClient.inGameHud.getChatHud().addMessage(
                         ChatFormatter.GENERIC_MESSAGE_PREFIX()
                             .append(Text.literal(name).styled(style -> style.withFormatting(Formatting.GOLD)))
                             .append(Text.literal(" seems awfully similar to ").styled(style -> style.withFormatting(Formatting.WHITE)))
-                            .append(Text.literal(playerListEntry.getProfile().getName()).styled(style -> style.withFormatting(Formatting.GOLD)))
+                            .append(Text.literal(playerListEntry.getProfile().name()).styled(style -> style.withFormatting(Formatting.GOLD)))
 
                 );
                 SWRC.minecraftClient.inGameHud.getChatHud().addMessage(
@@ -55,9 +55,9 @@ public class PlayerNameValidator {
                                 style
                                     .withFormatting(Formatting.GREEN)
                                     .withHoverEvent(
-                                        new HoverEvent.ShowText(Text.literal("Rename to " + playerListEntry.getProfile().getName()))
+                                        new HoverEvent.ShowText(Text.literal("Rename to " + playerListEntry.getProfile().name()))
                                     )
-                                    .withClickEvent(new ClickEvent.RunCommand("/swrc race player rename " + name + " " + playerListEntry.getProfile().getName()))
+                                    .withClickEvent(new ClickEvent.RunCommand("/swrc race player rename " + name + " " + playerListEntry.getProfile().name()))
                                 )
                             )
                 );

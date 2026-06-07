@@ -6,7 +6,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 //import net.fabricmc.fabric.api.client.rendering.v1.HudLayerRegistrationCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 //import net.fabricmc.fabric.api.client.rendering.v1.IdentifiedLayer;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+// import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
@@ -102,7 +103,13 @@ public class SWRC implements ClientModInitializer {
 				}
 		);
 
-		WorldRenderEvents.LAST.register(trackBuilderRenderer);
+		WorldRenderEvents.END_MAIN.register(context -> {
+			trackBuilderRenderer.onRender(
+					context.matrices(),
+					context.gameRenderer().getCamera(),
+					MinecraftClient.getInstance().gameRenderer.getEntityRenderCommandQueue()
+			);
+		});
 	}
 
 	public static TrackBuilder getTrackBuilder() {

@@ -83,7 +83,7 @@ public class Race {
         ArrayList<Snapshot> snapshots = new ArrayList<>();
         for (AbstractClientPlayerEntity player: SWRC.minecraftClient.world.getPlayers()) {
             if (isRacing(player.getName().getString())) {
-                snapshots.add(new Snapshot(player.getName().getString(), player.getPos(), player.getVelocity()));
+                snapshots.add(new Snapshot(player.getName().getString(), player.getEntityPos(), player.getVelocity()));
             }
         }
 

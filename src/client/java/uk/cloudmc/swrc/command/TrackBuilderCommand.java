@@ -459,7 +459,7 @@ public class TrackBuilderCommand implements CommandNodeProvider {
 
         if (trackBuilder != null) {
             if (trackBuilder.checkpointBuilder.hasActiveCheckpoint()) {
-                Vec3d position = SWRC.minecraftClient.player.getPos();
+                Vec3d position = SWRC.minecraftClient.player.getEntityPos();
 
                 trackBuilder.checkpointBuilder.setRight(position);
 
@@ -482,7 +482,7 @@ public class TrackBuilderCommand implements CommandNodeProvider {
 
         if (trackBuilder != null) {
             if (trackBuilder.checkpointBuilder.hasActiveCheckpoint()) {
-                Vec3d position = SWRC.minecraftClient.player.getPos();
+                Vec3d position = SWRC.minecraftClient.player.getEntityPos();
 
                 trackBuilder.checkpointBuilder.setLeft(position);
 

@@ -53,7 +53,7 @@ RaceCommand implements CommandNodeProvider {
                 }
 
                 for (PlayerListEntry player : Objects.requireNonNull(SWRC.minecraftClient.getNetworkHandler()).getListedPlayerListEntries().stream().toList()) {
-                    String display_name = player.getProfile().getName();
+                    String display_name = player.getProfile().name();
 
                     if (!display_name.toLowerCase().contains(builder.getRemainingLowerCase())) continue;
 
@@ -489,7 +489,7 @@ RaceCommand implements CommandNodeProvider {
 
                 if (player != null) {
                     return SWRC.minecraftClient.player.getRotationVec(1f).dotProduct(
-                             player.getPos().subtract(SWRC.minecraftClient.player.getPos())
+                             player.getEntityPos().subtract(SWRC.minecraftClient.player.getEntityPos())
                      );
                 }
 
@@ -625,7 +625,7 @@ RaceCommand implements CommandNodeProvider {
                 if (!(worldPlayer.getVehicle() instanceof BoatEntity) && !(worldPlayer.getVehicle() instanceof ChestBoatEntity))
                     continue;
 
-                if (worldPlayer.getPos().distanceTo(SWRC.minecraftClient.player.getPos()) <= range) {
+                if (worldPlayer.getEntityPos().distanceTo(SWRC.minecraftClient.player.getEntityPos()) <= range) {
                     C2SModifyRacerPacket packet = new C2SModifyRacerPacket();
 
                     packet.action = C2SModifyRacerPacket.ModifyRacerPacketAction.ADD;
@@ -655,7 +655,7 @@ RaceCommand implements CommandNodeProvider {
             for (AbstractClientPlayerEntity worldPlayer : SWRC.minecraftClient.world.getPlayers()) {
                 if (worldPlayer.getName().equals(SWRC.minecraftClient.player.getName())) continue;
 
-                if (worldPlayer.getPos().distanceTo(SWRC.minecraftClient.player.getPos()) <= range) {
+                if (worldPlayer.getEntityPos().distanceTo(SWRC.minecraftClient.player.getEntityPos()) <= range) {
                     C2SModifyRacerPacket packet = new C2SModifyRacerPacket();
 
                     packet.action = C2SModifyRacerPacket.ModifyRacerPacketAction.ADD;
