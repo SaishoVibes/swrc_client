@@ -10,6 +10,7 @@ import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.SWRCConfig;
 import uk.cloudmc.swrc.net.packets.*;
 import uk.cloudmc.swrc.util.ChatFormatter;
+import uk.cloudmc.swrc.util.NTPTimeSync;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -23,7 +24,8 @@ public class SWRCWebsocketConnection extends AbstractWebsocketConnection {
     public Map<String, S2CSessionsPacket.Session> sessions = new HashMap<>();
     public Double server_performance = null;
 
-    public String server_label = "no_motd";
+    public String server_label = "no_label";
+    public String motd = "no_motd";
 
     public SWRCWebsocketConnection(URI uri) {
         super(uri);
@@ -72,16 +74,17 @@ public class SWRCWebsocketConnection extends AbstractWebsocketConnection {
             C2SHandshakePacket handshake = new C2SHandshakePacket();
 
             assert SWRC.minecraftClient.player != null;
-            
+
             handshake.username = SWRC.minecraftClient.player.getName().getString();
             handshake.uuid = SWRC.minecraftClient.player.getUuidAsString();
             handshake.version = SWRC.VERSION;
+            handshake.clock_precise = NTPTimeSync.isPrecise();
+            handshake.clock_precision = NTPTimeSync.getOffset();
 
             sendPacket(handshake);
         }
         if (uPacket instanceof S2CHandshakePacket packet) {
-            SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[SWRC] " + packet.motd));
-            SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("[SWRC] Connected to " + this.server_label));
+            motd = packet.motd;
         }
         if (uPacket instanceof S2CMessagePacket packet) {
             SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE(String.format("[SWRC] %s", packet.message)));
@@ -103,8 +106,6 @@ public class SWRCWebsocketConnection extends AbstractWebsocketConnection {
             SWRCConfig.getInstance().race_key = packet.race_key;
             SWRCConfig.getInstance().save();
 
-            SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("Race Key saved to config"));
-
             GLFW.glfwSetClipboardString(SWRC.minecraftClient.getWindow().getHandle(), packet.race_key);
 
             SWRC.minecraftClient.inGameHud.getChatHud().addMessage(ChatFormatter.GENERIC_MESSAGE("Race Key copied to clipboard"));
@@ -112,29 +113,37 @@ public class SWRCWebsocketConnection extends AbstractWebsocketConnection {
     }
 
     public void promptSessions() {
-        MutableText text = Text.empty()
-                .append(ChatFormatter.SWRC_PREFIX().append(" Connected to ").append(server_label));
+        MutableText text = Text.empty().styled(style -> style.withFormatting(Formatting.YELLOW))
+                .append(Text.literal(" - "))
+                .append(Text.literal(server_label).styled(style -> style.withFormatting(Formatting.GOLD)))
+                .append(Text.literal(" - "));
+
+
+        text.append(Text.literal("\n"));
+        text.append(Text.literal(motd));
+
 
         for (Map.Entry<String, S2CSessionsPacket.Session> session : sessions.entrySet()) {
             text = text.append(
-                Text.literal("\n > ")
-                    .append(Text.literal("[CONNECT] ").styled(style ->
-                        style
-                            .withFormatting(Formatting.GREEN)
-                            .withHoverEvent(new HoverEvent.ShowText(
-                                Text.literal("Connect to " + session.getKey())
+                    Text.literal("\n ")
+                            .append(Text.literal("[JOIN] ").styled(style ->
+                                    style
+                                            .withFormatting(Formatting.GREEN)
+                                            .withHoverEvent(new HoverEvent.ShowText(
+                                                    Text.literal("Connect to " + session.getKey())
+                                            ))
+                                            .withClickEvent(new ClickEvent.RunCommand(
+                                                    "/swrc server sessions " + session.getKey() + " connect"
+                                            ))
                             ))
-                            .withClickEvent(new ClickEvent.RunCommand(
-                                "/swrc server sessions " + session.getKey() + " connect"
-                            ))
-                    ))
-                    .append(Text.literal(session.getKey()).styled(style -> style.withFormatting(Formatting.AQUA)))
-                    .append(Text.literal(" - "))
-                    .append(Text.literal(session.getValue().state).styled(style -> style.withFormatting(Formatting.GOLD)))
-                    .append(Text.literal(" - "))
-                    .append(Text.literal(String.valueOf(session.getValue().perf)))
-                    .append(Text.literal("mspt"))
-                    .append("\n")
+                            .append(Text.literal(session.getKey()).styled(style -> style.withFormatting(Formatting.AQUA)))
+                            .append(Text.literal(" "))
+                            .append(Text.literal(String.format("%.3f", session.getValue().perf)).styled(style -> style.withFormatting(Formatting.GRAY)))
+                            .append(Text.literal("mspt").styled(style -> style.withFormatting(Formatting.GRAY)))
+                            .append(Text.literal(" "))
+                            .append(Text.literal(session.getValue().state != null ? session.getValue().state : "-").styled(style -> style.withFormatting(Formatting.GRAY)))
+                            .append(Text.literal(" "))
+                            .append(Text.literal(session.getValue().status != null ? session.getValue().status : "-").styled(style -> style.withFormatting(Formatting.YELLOW)))
             );
         }
 

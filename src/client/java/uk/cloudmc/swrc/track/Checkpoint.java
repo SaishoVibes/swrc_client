@@ -2,6 +2,7 @@ package uk.cloudmc.swrc.track;
 
 import com.google.gson.annotations.Expose;
 import net.minecraft.util.math.Vec3d;
+import uk.cloudmc.swrc.util.NTPTimeSync;
 import uk.cloudmc.swrc.util.Snapshot;
 
 import java.util.ArrayList;
@@ -22,13 +23,13 @@ public class Checkpoint {
 
     private record SideResult(boolean line, boolean between) {
         @Override
-            public String toString() {
-                return "SideResult{" +
-                        "line=" + line +
-                        ", between=" + between +
-                        '}';
-            }
+        public String toString() {
+            return "SideResult{" +
+                    "line=" + line +
+                    ", between=" + between +
+                    '}';
         }
+    }
 
     public Checkpoint() {}
 
@@ -37,7 +38,7 @@ public class Checkpoint {
     }
 
     public boolean isOnCooldown(String name) {
-        return !(cooldowns.getOrDefault(name, 0L) < System.currentTimeMillis());
+        return !(cooldowns.getOrDefault(name, 0L) < NTPTimeSync.getTrueTime());
     }
 
     public ArrayList<Snapshot> getLineCrosses(ArrayList<Snapshot> positionSnapshots) {
@@ -58,7 +59,7 @@ public class Checkpoint {
                 if (side.line && side.between) {
                     line_crosses.add(positionSnapshot);
 
-                    setCooldownExpire(positionSnapshot.getPlayer(), System.currentTimeMillis() + 10000);
+                    setCooldownExpire(positionSnapshot.getPlayer(), NTPTimeSync.getTrueTime() + 10000);
 
                     checkpoint_sides.put(positionSnapshot.getPlayer(), true);
                     continue;
@@ -78,10 +79,10 @@ public class Checkpoint {
 
         double between_factor = Math.sqrt(
                 Math.pow(left.getX() - position.getX(), 2)
-                + Math.pow(left.getZ() - position.getZ(), 2)
+                        + Math.pow(left.getZ() - position.getZ(), 2)
         ) - Math.sqrt(
                 Math.pow(right.getX() - position.getX(), 2)
-                + Math.pow(right.getZ() - position.getZ(), 2)
+                        + Math.pow(right.getZ() - position.getZ(), 2)
         );
 
         double lowest = Math.min(left.y, right.y);
@@ -132,7 +133,7 @@ public class Checkpoint {
 
         lineLength = Math.sqrt(
                 Math.pow(left.getX() - right.getX(), 2)
-                + Math.pow(left.getZ() - right.getZ(), 2)
+                        + Math.pow(left.getZ() - right.getZ(), 2)
         );
         center = getCenter();
     }

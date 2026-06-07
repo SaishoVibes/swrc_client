@@ -35,113 +35,113 @@ public class TrackBuilderCommand implements CommandNodeProvider {
     @Override
     public LiteralArgumentBuilder<FabricClientCommandSource> command() {
         return literal("track")
-            .executes(this::doTrackBuilderData)
-            .then(
-                literal("new")
+                .executes(this::doTrackBuilderData)
                 .then(
-                    argument("id", StringArgumentType.string())
-                    .executes(this::doNewTrackBuilder)
-                )
-            )
-            .then(
-                literal("trap")
-                .executes(this::doNewTrap)
-                .then(
-                    literal("done")
-                    .executes(this::finishTrapBuilder)
-                )
-            )
-            .then(
-                literal("checkpoint")
-                .executes(this::doNewCheckpoint)
-                .then(
-                    literal("left")
-                    .executes(this::doCheckpointLeft)
+                        literal("new")
+                                .then(
+                                        argument("id", StringArgumentType.string())
+                                                .executes(this::doNewTrackBuilder)
+                                )
                 )
                 .then(
-                    literal("right")
-                    .executes(this::doCheckpointRight)
+                        literal("trap")
+                                .executes(this::doNewTrap)
+                                .then(
+                                        literal("done")
+                                                .executes(this::finishTrapBuilder)
+                                )
                 )
                 .then(
-                    literal("pit")
-                    .then(
-                        literal("trigger")
-                        .executes(this::doNewPit)
-                    )
-                    .then(
-                        literal("enter")
-                        .executes(this::doNewPitEnter)
-                    )
+                        literal("checkpoint")
+                                .executes(this::doNewCheckpoint)
+                                .then(
+                                        literal("left")
+                                                .executes(this::doCheckpointLeft)
+                                )
+                                .then(
+                                        literal("right")
+                                                .executes(this::doCheckpointRight)
+                                )
+                                .then(
+                                        literal("pit")
+                                                .then(
+                                                        literal("trigger")
+                                                                .executes(this::doNewPit)
+                                                )
+                                                .then(
+                                                        literal("enter")
+                                                                .executes(this::doNewPitEnter)
+                                                )
+                                )
+                                .then(
+                                        literal("trap")
+                                                .then(
+                                                        literal("enter")
+                                                                .executes(this::newTrapEnter)
+                                                )
+                                                .then(
+                                                        literal("exit")
+                                                                .executes(this::newTrapExit)
+                                                )
+                                )
+                                .then(
+                                        literal("done")
+                                                .executes(this::doCheckpointDone)
+                                )
                 )
                 .then(
-                    literal("trap")
-                    .then(
-                        literal("enter")
-                        .executes(this::newTrapEnter)
-                    )
-                    .then(
+                        literal("meta")
+                                .executes(this::doMetaInfo)
+                                .then(
+                                        argument("meta", StringArgumentType.string())
+                                                .suggests(
+                                                        this::suggestMeta
+                                                )
+                                                .executes(this::queryMeta)
+                                                .then(
+                                                        argument("value", StringArgumentType.string())
+                                                                .executes(this::setMeta)
+                                                )
+                                )
+                )
+                .then(
+                        literal("save")
+                                .then(
+                                        argument("filename", StringArgumentType.string())
+                                                .suggests(new RaceCommand.TrackFileSuggestor())
+                                                .executes(context -> this.doSaveTrack(context, false))
+                                                .then(
+                                                        argument("wordle", StringArgumentType.string())
+                                                                .executes(context -> {
+                                                                    String attempt = StringArgumentType.getString(context, "wordle");
+
+                                                                    LocalDateTime dateTime = LocalDateTime.now();
+
+                                                                    String answer = NYTAPI.getWordleAnswer(dateTime.getYear(), dateTime.getMonth().getValue(), dateTime.getDayOfMonth());
+
+                                                                    if (answer != null && answer.equals(attempt)) {
+                                                                        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Correct."));
+                                                                        return this.doSaveTrack(context, true);
+                                                                    }
+
+                                                                    context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Incorrect."));
+
+                                                                    return 0;
+                                                                })
+                                                )
+                                )
+                )
+                .then(
+                        literal("load")
+                                .then(
+                                        argument("filename", StringArgumentType.string())
+                                                .suggests(new RaceCommand.TrackFileSuggestor())
+                                                .executes(this::doLoadTrack)
+                                )
+                )
+                .then(
                         literal("exit")
-                        .executes(this::newTrapExit)
-                    )
-                )
-                .then(
-                    literal("done")
-                    .executes(this::doCheckpointDone)
-                )
-            )
-            .then(
-                literal("meta")
-                .executes(this::doMetaInfo)
-                .then(
-                    argument("meta", StringArgumentType.string())
-                    .suggests(
-                            this::suggestMeta
-                    )
-                    .executes(this::queryMeta)
-                    .then(
-                        argument("value", StringArgumentType.string())
-                        .executes(this::setMeta)
-                    )
-                )
-            )
-            .then(
-                literal("save")
-                .then(
-                    argument("filename", StringArgumentType.string())
-                    .suggests(new RaceCommand.TrackFileSuggestor())
-                    .executes(context -> this.doSaveTrack(context, false))
-                    .then(
-                        argument("wordle", StringArgumentType.string())
-                        .executes(context -> {
-                            String attempt = StringArgumentType.getString(context, "wordle");
-
-                            LocalDateTime dateTime = LocalDateTime.now();
-
-                            String answer = NYTAPI.getWordleAnswer(dateTime.getYear(), dateTime.getMonth().getValue(), dateTime.getDayOfMonth());
-
-                            if (answer != null && answer.equals(attempt)) {
-                                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Correct."));
-                                return this.doSaveTrack(context, true);
-                            }
-
-                            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Incorrect."));
-
-                            return 0;
-                        })
-                    )
-                )
-            )
-            .then(
-                literal("load")
-                .then(
-                    argument("filename", StringArgumentType.string())
-                    .suggests(new RaceCommand.TrackFileSuggestor())
-                    .executes(this::doLoadTrack)
-                )
-            )
-            .then(
-                literal("exit")
-                .executes(this::doExitTrackBuilder));
+                                .executes(this::doExitTrackBuilder));
     }
 
     private int doExitTrackBuilder(CommandContext<FabricClientCommandSource> context) {
@@ -238,6 +238,7 @@ public class TrackBuilderCommand implements CommandNodeProvider {
 
                         mutableText = mutableText.append(Text.literal("Please choose wisely\n").styled(style -> style.withFormatting(Formatting.WHITE)));
                         mutableText = mutableText.append(Text.literal("(or go set it now)").styled(style -> style.withFormatting(Formatting.GRAY).withFormatting(Formatting.ITALIC)));
+
                         context.getSource().sendFeedback(
                                 mutableText
                         );
@@ -478,7 +479,6 @@ public class TrackBuilderCommand implements CommandNodeProvider {
         if (trackBuilder != null) {
             Vec3d position = SWRC.minecraftClient.player.getEntityPos();
             if (trackBuilder.checkpointBuilder.hasActiveCheckpoint()) {
-
                 trackBuilder.checkpointBuilder.setRight(position);
 
             } else {
@@ -509,7 +509,6 @@ public class TrackBuilderCommand implements CommandNodeProvider {
         if (trackBuilder != null) {
             Vec3d position = SWRC.minecraftClient.player.getEntityPos();
             if (trackBuilder.checkpointBuilder.hasActiveCheckpoint()) {
-
                 trackBuilder.checkpointBuilder.setLeft(position);
 
             } else {
@@ -523,6 +522,7 @@ public class TrackBuilderCommand implements CommandNodeProvider {
             }
 
             context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Set left at " + position.toString()));
+
             return Command.SINGLE_SUCCESS;
         }
 
@@ -543,15 +543,8 @@ public class TrackBuilderCommand implements CommandNodeProvider {
                 context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Successfully created new checkpoint"));
                 return Command.SINGLE_SUCCESS;
             } else {
-                if (trackBuilder.trapBuilder.getActiveTrap().enter == null && trackBuilder.trapBuilder.getActiveTrap().exit != null) {
-                    context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as previous trap is missing entrance"));
-                    context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc track checkpoint trap enter", "to finalize the trap entrance"));
-                } else if (trackBuilder.trapBuilder.getActiveTrap().enter != null && trackBuilder.trapBuilder.getActiveTrap().exit == null) {
-                    context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as previous trap is missing exit"));
-                    context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc track checkpoint trap exit", "to finalize the trap exit"));
-                } else {
-                    context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as trap isn't complete"));
-                }
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as checkpoint can't be finalized"));
+                context.getSource().sendFeedback(ChatFormatter.HINT("make sure you have the left and right side of the checkpoint set"));
                 return 0;
             }
         }
@@ -573,7 +566,16 @@ public class TrackBuilderCommand implements CommandNodeProvider {
                 return Command.SINGLE_SUCCESS;
             }
 
-            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as trap is invalid"));
+
+            if (trackBuilder.trapBuilder.getActiveTrap().enter == null && trackBuilder.trapBuilder.getActiveTrap().exit != null) {
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as trap is missing entrance"));
+                context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc track checkpoint trap enter", "to finalize the trap entrance"));
+            } else if (trackBuilder.trapBuilder.getActiveTrap().enter != null && trackBuilder.trapBuilder.getActiveTrap().exit == null) {
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as trap is missing exit"));
+                context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc track checkpoint trap exit", "to finalize the trap exit"));
+            } else {
+                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as trap isn't complete"));
+            }
             return 0;
         }
 
@@ -594,12 +596,21 @@ public class TrackBuilderCommand implements CommandNodeProvider {
                 context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Successfully created new trap"));
                 return Command.SINGLE_SUCCESS;
             } else {
-                context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Current Trap is not valid and can not be finalized"));
+                if (trackBuilder.trapBuilder.getActiveTrap().enter == null && trackBuilder.trapBuilder.getActiveTrap().exit != null) {
+                    context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as previous trap is missing entrance"));
+                    context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc track checkpoint trap enter", "to finalize the trap entrance"));
+                } else if (trackBuilder.trapBuilder.getActiveTrap().enter != null && trackBuilder.trapBuilder.getActiveTrap().exit == null) {
+                    context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as previous trap is missing exit"));
+                    context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("try", "/swrc track checkpoint trap exit", "to finalize the trap exit"));
+                } else {
+                    context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as trap isn't complete"));
+                }
                 return 0;
             }
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as no TrackBuilder has been created"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as no track is currently active"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("use", "/swrc track new ", "to initialize a new track"));
         return 0;
     }
 
@@ -613,16 +624,25 @@ public class TrackBuilderCommand implements CommandNodeProvider {
             return Command.SINGLE_SUCCESS;
         }
 
-        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed to create a TrackBuilder as one is already active"));
+        context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed to load a track as one is already active"));
+        context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("use", "/swrc track exit", "to exit the current track"));
         return 0;
     }
 
     private int doTrackBuilderData(CommandContext<FabricClientCommandSource> context) {
         TrackBuilder trackBuilder = SWRC.getTrackBuilder();
         if (trackBuilder != null) {
-            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format("TrackBuilder active (id=%s, #checkpoints=%s)", trackBuilder.id, trackBuilder.numberOfCheckpoints())));
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE(String.format(
+                    "%s (#checkpoints=%s, #traps=%s, pit_enter=%s, pit_exit=%s)",
+                    trackBuilder.getName(),
+                    trackBuilder.numberOfCheckpoints(),
+                    trackBuilder.numberOfTraps(),
+                    trackBuilder.getPit() != null ? "Yes" : "No",
+                    trackBuilder.getPit() != null ? "Yes" : "No"
+            )));
         } else {
-            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("TrackBuilder not active"));
+            context.getSource().sendFeedback(ChatFormatter.GENERIC_MESSAGE("Failed as no track is currently active"));
+            context.getSource().sendFeedback(ChatFormatter.HINT_COMMAND("use", "/swrc track new ", "to initialize a new track"));
         }
 
         return Command.SINGLE_SUCCESS;

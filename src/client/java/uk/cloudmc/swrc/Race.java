@@ -82,7 +82,6 @@ public class Race {
     public void update() {
         if (SWRC.minecraftClient.world == null || this.raceState == RaceState.NONE) return;
         long update_start = NTPTimeSync.getTrueTime();
-        long update_start = System.currentTimeMillis();
 
         ArrayList<Snapshot> snapshots = new ArrayList<>();
         for (AbstractClientPlayerEntity player: SWRC.minecraftClient.world.getPlayers()) {

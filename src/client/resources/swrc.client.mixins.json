@@ -5,7 +5,9 @@
 	"client": [
 		"EntityRendererAccessor",
 		"LivingEntityRenderMixin",
-		"WorldRendererMixin"
+		"WorldRendererMixin",
+		"AbstractBoatEntityMixin",
+		"PositionInterpolatorAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

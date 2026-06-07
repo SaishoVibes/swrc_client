@@ -1,10 +1,8 @@
 package uk.cloudmc.swrc.hud;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -13,6 +11,7 @@ import uk.cloudmc.swrc.SWRC;
 import uk.cloudmc.swrc.SWRCConfig;
 import uk.cloudmc.swrc.net.packets.S2CUpdatePacket;
 import uk.cloudmc.swrc.util.DeltaFormat;
+import uk.cloudmc.swrc.util.NTPTimeSync;
 
 public class BestLap implements Hud {
 
@@ -34,7 +33,7 @@ public class BestLap implements Hud {
     }
 
     @Override
-    public void render(DrawContext graphics, float tickDelta) {
+    public void $render(DrawContext context, RenderTickCounter tickDelta) {
         Race race = SWRC.getRace();
 
         if (race.getFlap() == null) return;
@@ -42,21 +41,20 @@ public class BestLap implements Hud {
         int scaledWidth = SWRC.minecraftClient.getWindow().getScaledWidth();
         int scaledHeight = SWRC.minecraftClient.getWindow().getScaledHeight();
 
-        //DrawContext.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-
-        int u = 32;
+        int u = 27;
         int v = 0;
         int w = 192;
         int h = 22;
 
         int p = (int) (scaledHeight * TOP_TARGET_PERCENTAGE);
-        double x = (double) (System.currentTimeMillis() - begin_time) / 1000;
+        double x = (double) (NTPTimeSync.getTrueTime() - begin_time) / 1000;
 
         // y=\max\left(0,\min\left(p,-\frac{6px}{t^{2}}\left(x-t\right)\left\{0<x<t\right\}\right)\right) :: p = peak :: t = ticks on screen
         int animationHeight = (int) Math.floor(Math.max(0, Math.min(p, -(6 * p * x)/(ON_SCREEN_TIME * ON_SCREEN_TIME) * (x - ON_SCREEN_TIME))));
 
-        graphics.drawTexture(RenderPipelines.GUI_TEXTURED , WIDGETS_TEXTURE, scaledWidth / 2 - w / 2, animationHeight - h, u, v, w, h, 256, 256);
-        graphics.drawText(
+        context.drawTexture(RenderPipelines.GUI_TEXTURED , WIDGETS_TEXTURE, scaledWidth / 2 - w / 2, animationHeight - h, u, v, w, h, 256, 256);
+
+        context.drawText(
                 SWRC.minecraftClient.textRenderer,
                 Text.literal(flap_owner).styled(style -> style.withFormatting(Formatting.DARK_PURPLE)),
                 scaledWidth / 2 - w / 2 + 103,
@@ -64,7 +62,7 @@ public class BestLap implements Hud {
                 0xFFFFFFFF,
                 SWRCConfig.getInstance().leaderboard_shadow
         );
-        graphics.drawText(
+        context.drawText(
                 SWRC.minecraftClient.textRenderer,
                 Text.literal(DeltaFormat.formatMillis(flap)),
                 scaledWidth / 2 - w / 2 + 103,
@@ -72,13 +70,12 @@ public class BestLap implements Hud {
                 0xFFFFFFFF,
                 SWRCConfig.getInstance().leaderboard_shadow
         );
-        //graphics.drawTexture(RenderPipelines.GUI_TEXTURED , WIDGETS_TEXTURE, scaledWidth / 2 - w / 2, animationHeight - h, u, v, w, h, 256, 256);
     }
 
     public void show(S2CUpdatePacket.Flap flap) {
         this.flap_owner = flap.getPlayerName();
         this.flap = flap.getTime();
 
-        begin_time = System.currentTimeMillis();
+        begin_time = NTPTimeSync.getTrueTime();
     }
 }
