@@ -35,32 +35,72 @@ public class TrackBuilderRenderer {
 
         queue.submitCustom(matrixStack, DEBUG_LINE_LAYER, (entry, consumer) -> {
             Matrix4f m = entry.getPositionMatrix();
-            consumer.vertex(m, fLeft.x,  fLeft.y,  fLeft.z).color(color);
-            consumer.vertex(m, fRight.x, fRight.y, fRight.z).color(color);
+            // For each pair of vertices, the normal is the direction from point A to point B
+            Vector3f normal = new Vector3f(fRight.x - fLeft.x, fRight.y - fLeft.y, fRight.z - fLeft.z).normalize();
+            consumer.vertex(m, fLeft.x,  fLeft.y,  fLeft.z)
+                    .color(color)
+                    .normal(entry, normal.x, normal.y, normal.z)
+                    .lineWidth(1.0f);
+            consumer.vertex(m, fRight.x, fRight.y, fRight.z)
+                    .color(color)
+                    .normal(entry, normal.x, normal.y, normal.z)
+                    .lineWidth(1.0f);
         });
 
         queue.submitCustom(matrixStack, DEBUG_LINE_LAYER, (entry, consumer) -> {
             Matrix4f m = entry.getPositionMatrix();
-            consumer.vertex(m, fLeft.x, fLeft.y - 2, fLeft.z).color(colorFaded);
-            consumer.vertex(m, fLeft.x, fLeft.y + 2, fLeft.z).color(color);
+            // For each pair of vertices, the normal is the direction from point A to point B
+            Vector3f normal = new Vector3f(fRight.x - fLeft.x, fRight.y - fLeft.y, fRight.z - fLeft.z).normalize();
+            consumer.vertex(m, fLeft.x,  fLeft.y,  fLeft.z)
+                    .color(color)
+                    .normal(entry, normal.x, normal.y, normal.z)
+                    .lineWidth(1.0f);
+            consumer.vertex(m, fRight.x, fRight.y, fRight.z)
+                    .color(color)
+                    .normal(entry, normal.x, normal.y, normal.z)
+                    .lineWidth(1.0f);
         });
 
         queue.submitCustom(matrixStack, DEBUG_LINE_LAYER, (entry, consumer) -> {
             Matrix4f m = entry.getPositionMatrix();
-            consumer.vertex(m, fRight.x, fRight.y - 2, fRight.z).color(colorFaded);
-            consumer.vertex(m, fRight.x, fRight.y + 2, fRight.z).color(color);
+            // For each pair of vertices, the normal is the direction from point A to point B
+            Vector3f normal = new Vector3f(fRight.x - fLeft.x, fRight.y - fLeft.y, fRight.z - fLeft.z).normalize();
+            consumer.vertex(m, fLeft.x,  fLeft.y,  fLeft.z)
+                    .color(color)
+                    .normal(entry, normal.x, normal.y, normal.z)
+                    .lineWidth(1.0f);
+            consumer.vertex(m, fRight.x, fRight.y, fRight.z)
+                    .color(color)
+                    .normal(entry, normal.x, normal.y, normal.z)
+                    .lineWidth(1.0f);
         });
 
         queue.submitCustom(matrixStack, DEBUG_LINE_LAYER, (entry, consumer) -> {
             Matrix4f m = entry.getPositionMatrix();
-            consumer.vertex(m, fLeft.x, fLeft.y, fLeft.z).color(color);
-            consumer.vertex(m, fLeft.x + dir.x, fLeft.y + dir.y, fLeft.z + dir.z).color(color);
+            // For each pair of vertices, the normal is the direction from point A to point B
+            Vector3f normal = new Vector3f(fRight.x - fLeft.x, fRight.y - fLeft.y, fRight.z - fLeft.z).normalize();
+            consumer.vertex(m, fLeft.x,  fLeft.y,  fLeft.z)
+                    .color(color)
+                    .normal(entry, normal.x, normal.y, normal.z)
+                    .lineWidth(1.0f);
+            consumer.vertex(m, fRight.x, fRight.y, fRight.z)
+                    .color(color)
+                    .normal(entry, normal.x, normal.y, normal.z)
+                    .lineWidth(1.0f);
         });
 
         queue.submitCustom(matrixStack, DEBUG_LINE_LAYER, (entry, consumer) -> {
             Matrix4f m = entry.getPositionMatrix();
-            consumer.vertex(m, fRight.x, fRight.y, fRight.z).color(color);
-            consumer.vertex(m, fRight.x + dir.x, fRight.y + dir.y, fRight.z + dir.z).color(color);
+            // For each pair of vertices, the normal is the direction from point A to point B
+            Vector3f normal = new Vector3f(fRight.x - fLeft.x, fRight.y - fLeft.y, fRight.z - fLeft.z).normalize();
+            consumer.vertex(m, fLeft.x,  fLeft.y,  fLeft.z)
+                    .color(color)
+                    .normal(entry, normal.x, normal.y, normal.z)
+                    .lineWidth(1.0f);
+            consumer.vertex(m, fRight.x, fRight.y, fRight.z)
+                    .color(color)
+                    .normal(entry, normal.x, normal.y, normal.z)
+                    .lineWidth(1.0f);
         });
     }
 
@@ -70,8 +110,8 @@ public class TrackBuilderRenderer {
 
         queue.submitCustom(matrixStack, DEBUG_LINE_LAYER, (entry, consumer) -> {
             Matrix4f m = entry.getPositionMatrix();
-            consumer.vertex(m, fPos.x, fPos.y - 2, fPos.z).color(colorFaded);
-            consumer.vertex(m, fPos.x, fPos.y + 2, fPos.z).color(color);
+            consumer.vertex(m, fPos.x, fPos.y - 2, fPos.z).color(colorFaded).lineWidth(1.0f);
+            consumer.vertex(m, fPos.x, fPos.y + 2, fPos.z).color(color).lineWidth(1.0f);
         });
     }
 
@@ -81,8 +121,8 @@ public class TrackBuilderRenderer {
 
         queue.submitCustom(matrixStack, DEBUG_LINE_LAYER, (entry, consumer) -> {
             Matrix4f m = entry.getPositionMatrix();
-            consumer.vertex(m, fPos1.x, fPos1.y, fPos1.z).color(color & 0xFFFFFF00);
-            consumer.vertex(m, fPos2.x, fPos2.y, fPos2.z).color(color);
+            consumer.vertex(m, fPos1.x, fPos1.y, fPos1.z).color(color & 0xFFFFFF00).lineWidth(1.0f);
+            consumer.vertex(m, fPos2.x, fPos2.y, fPos2.z).color(color).lineWidth(1.0f);
         });
     }
 
